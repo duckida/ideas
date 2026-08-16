@@ -12,9 +12,7 @@ import {
 } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
-import type { Role } from "@/lib/types";
-
-export const DEFAULT_ROLE: Role = "student";
+import { DEFAULT_ROLE, type Role } from "@/lib/types";
 
 /** OAuth provider for Microsoft / Office 365 school accounts. */
 export function microsoftProvider(): OAuthProvider {

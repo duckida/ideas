@@ -11,6 +11,11 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
   serverTimestamp,
   arrayUnion,
   arrayRemove,
@@ -18,7 +23,14 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
-import type { IdeaStatus } from "@/lib/types";
+import {
+  DEFAULT_ROLE,
+  type Idea,
+  type IdeaStatus,
+  type Role,
+  type SupportDoc,
+  type UserDoc,
+} from "@/lib/types";
 
 function db(): Firestore {
   return getFirestore(getFirebaseApp());
@@ -150,6 +162,131 @@ export async function deleteIdea(
   firestore: Firestore = db(),
 ): Promise<void> {
   await deleteDoc(doc(firestore, "ideas", ideaId));
+}
+
+// ---- Read helpers ----
+
+function ideaFromSnapshot(snap: {
+  id: string;
+  data: () => Record<string, unknown>;
+}): Idea {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    title: String(d.title ?? ""),
+    description: String(d.description ?? ""),
+    status: (d.status as IdeaStatus) ?? "pending",
+    authorId: String(d.authorId ?? ""),
+    authorName: String(d.authorName ?? ""),
+    upvoteUserIds: Array.isArray(d.upvoteUserIds) ? (d.upvoteUserIds as string[]) : [],
+    upvoteCount: Number(d.upvoteCount ?? 0),
+    moderationFeedback: (d.moderationFeedback as Idea["moderationFeedback"]) ?? null,
+    timeline: Array.isArray(d.timeline) ? (d.timeline as Idea["timeline"]) : [],
+    createdAt: (d.createdAt as Idea["createdAt"]) ?? null,
+    updatedAt: (d.updatedAt as Idea["updatedAt"]) ?? null,
+  };
+}
+
+/** Fetch a single idea by id. */
+export async function getIdea(
+  ideaId: string,
+  firestore: Firestore = db(),
+): Promise<Idea | null> {
+  const snap = await getDoc(doc(firestore, "ideas", ideaId));
+  return snap.exists() ? ideaFromSnapshot(snap) : null;
+}
+
+/** The home feed — only approved ideas, newest first. */
+export async function getApprovedIdeas(
+  firestore: Firestore = db(),
+): Promise<Idea[]> {
+  const q = query(
+    collection(firestore, "ideas"),
+    where("status", "==", "approved"),
+    orderBy("createdAt", "desc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(ideaFromSnapshot);
+}
+
+/** The idea the given author submitted (any status) — used by /me. */
+export async function getIdeasByAuthor(
+  authorId: string,
+  firestore: Firestore = db(),
+): Promise<Idea[]> {
+  const q = query(
+    collection(firestore, "ideas"),
+    where("authorId", "==", authorId),
+    orderBy("createdAt", "desc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(ideaFromSnapshot);
+}
+
+/** All ideas still awaiting moderation — used by /moderation. */
+export async function getPendingIdeas(
+  firestore: Firestore = db(),
+): Promise<Idea[]> {
+  const q = query(
+    collection(firestore, "ideas"),
+    where("status", "==", "pending"),
+    orderBy("createdAt", "asc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(ideaFromSnapshot);
+}
+
+/** Support docs for a single idea (= the leaders backing it). */
+export async function getIdeaSupports(
+  ideaId: string,
+  firestore: Firestore = db(),
+): Promise<SupportDoc[]> {
+  const q = query(collection(firestore, "supports"), where("ideaId", "==", ideaId));
+  const snap = await getDocs(q);
+  return snap.docs.map((s) => ({
+    ideaId: String(s.data().ideaId ?? ""),
+    leaderId: String(s.data().leaderId ?? ""),
+    leaderName: String(s.data().leaderName ?? ""),
+    createdAt: (s.data().createdAt as SupportDoc["createdAt"]) ?? null,
+  }));
+}
+
+/** Support docs for every idea one leader backs — used by /me. */
+export async function getLeaderSupports(
+  leaderId: string,
+  firestore: Firestore = db(),
+): Promise<SupportDoc[]> {
+  const q = query(
+    collection(firestore, "supports"),
+    where("leaderId", "==", leaderId),
+    orderBy("createdAt", "desc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((s) => ({
+    ideaId: String(s.data().ideaId ?? ""),
+    leaderId: String(s.data().leaderId ?? ""),
+    leaderName: String(s.data().leaderName ?? ""),
+    createdAt: (s.data().createdAt as SupportDoc["createdAt"]) ?? null,
+  }));
+}
+
+/** A user doc by email — used by the admin to promote leaders. */
+export async function getUserByEmail(
+  email: string,
+  firestore: Firestore = db(),
+): Promise<UserDoc | null> {
+  const q = query(collection(firestore, "users"), where("email", "==", email.toLowerCase()));
+  const snap = await getDocs(q);
+  const first = snap.docs[0];
+  if (!first) return null;
+  const d = first.data() as Partial<UserDoc>;
+  return {
+    uid: first.id,
+    email: d.email ?? "",
+    displayName: d.displayName ?? "",
+    role: (d.role as Role) ?? DEFAULT_ROLE,
+    createdAt: d.createdAt ?? null,
+  };
 }
 
 export type { Firestore };

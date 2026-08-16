@@ -127,6 +127,7 @@ export const strings = {
     save: "Save",
     confirm: "Confirm",
     logout: "Sign out",
+    close: "Close",
   },
 } as const;
 

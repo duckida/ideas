@@ -2,6 +2,10 @@ import type { Timestamp } from "firebase/firestore";
 
 export type Role = "student" | "leader" | "admin";
 
+/** Role assigned to a brand-new account (students upvote; leaders/admins
+ * are promoted by an admin). Shared by auth + data layers. */
+export const DEFAULT_ROLE: Role = "student";
+
 export type IdeaStatus =
   | "pending"
   | "changes_requested"
