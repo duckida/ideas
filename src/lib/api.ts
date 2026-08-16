@@ -289,5 +289,32 @@ export async function getUserByEmail(
   };
 }
 
+/** Every user with a leader role (leaders + admins) — used by the admin page. */
+export async function getLeaders(
+  firestore: Firestore = db(),
+): Promise<UserDoc[]> {
+  const q = query(collection(firestore, "users"), where("role", "in", ["leader", "admin"]));
+  const snap = await getDocs(q);
+  return snap.docs.map((s) => {
+    const d = s.data() as Partial<UserDoc>;
+    return {
+      uid: s.id,
+      email: d.email ?? "",
+      displayName: d.displayName ?? "",
+      role: (d.role as Role) ?? DEFAULT_ROLE,
+      createdAt: d.createdAt ?? null,
+    };
+  });
+}
+
+/** Promote/demote a user's role — admins only (enforced by firestore.rules). */
+export async function setUserRole(
+  uid: string,
+  role: Role,
+  firestore: Firestore = db(),
+): Promise<void> {
+  await updateDoc(doc(firestore, "users", uid), { role });
+}
+
 export type { Firestore };
 export type { IdeaStatus };
