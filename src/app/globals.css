@@ -1,26 +1,48 @@
 @import "tailwindcss";
 
+/*
+ * Kakao-inspired theme — light colours with a yellow accent.
+ * "Kakao Big Sans" is bundled locally (OFL-licensed, see OFL.txt).
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffdf6;
+  --surface: #ffffff;
+  --foreground: #2b2b2b;
+  --muted: #8a8578;
+  --kakao-yellow: #ffe812;
+  --kakao-yellow-soft: #fff7c2;
+  --kakao-ink: #3a2a00;
+  --kakao-red: #f45b3c;
+  --border: #f0ead9;
+  --success: #35b06c;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-muted: var(--muted);
+  --color-kakao: var(--kakao-yellow);
+  --color-kakao-soft: var(--kakao-yellow-soft);
+  --color-ink: var(--kakao-ink);
+  --color-danger: var(--kakao-red);
+  --color-success: var(--success);
+  --color-line: var(--border);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-kakao-big-sans), "Kakao Big Sans", ui-rounded,
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-xl2: 1.25rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Rounded, friendly focus ring */
+*:focus-visible {
+  outline: 3px solid var(--kakao-yellow);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
