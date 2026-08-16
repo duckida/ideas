@@ -31,12 +31,15 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   const [supports, setSupports] = useState<Array<{ leaderId: string; leaderName: string }>>([]);
   const [busy, setBusy] = useState(false);
   const [post, setPost] = useState("");
+  // Bumped after a mutation so the modal re-syncs from the server without
+  // depending on the parent's (stable) `onMutated` callback in the effect.
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let active = true;
-    // Keep the modal fresh: reload the idea + its supports on open and when
-    // the parent signals a mutation.
-    Promise.all([getIdea(idea.id), getIdeaSupports(idea.id)])
+    // Keep the modal fresh: reload the idea + its supports on open and after
+    // any local mutation (timeline posts etc.).
+    Promise.all([getIdea(initialIdea.id), getIdeaSupports(initialIdea.id)])
       .then(([fresh, sup]) => {
         if (!active) return;
         if (fresh) setIdea(fresh);
@@ -46,7 +49,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     return () => {
       active = false;
     };
-  }, [idea.id, onMutated]);
+  }, [initialIdea.id, reloadTick]);
 
   const uid = user?.uid;
   const hasUpvoted = uid !== undefined && idea.upvoteUserIds.includes(uid);
@@ -64,6 +67,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
           : [...prev.upvoteUserIds, uid],
         upvoteCount: Math.max(0, prev.upvoteCount + (hasUpvoted ? -1 : 1)),
       }));
+      setReloadTick((t) => t + 1);
       onMutated();
     } finally {
       setBusy(false);
@@ -81,6 +85,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
         await supportIdea(idea.id, { uid, displayName: user.displayName });
         setSupports((prev) => [...prev, { leaderId: uid, leaderName: user.displayName }]);
       }
+      setReloadTick((t) => t + 1);
       onMutated();
     } finally {
       setBusy(false);
@@ -94,6 +99,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     try {
       await postTimelineUpdate(idea.id, { uid: user.uid, displayName: user.displayName }, post.trim());
       setPost("");
+      setReloadTick((t) => t + 1);
       onMutated();
     } finally {
       setBusy(false);

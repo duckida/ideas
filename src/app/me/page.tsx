@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { IdeaModal } from "@/components/IdeaModal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { getIdeasByAuthor, getLeaderSupports, getIdea, deleteIdea } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
@@ -17,6 +18,9 @@ export default function MePage() {
   const [myIdeas, setMyIdeas] = useState<Idea[]>([]);
   const [supported, setSupported] = useState<Idea[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
 
@@ -57,13 +61,17 @@ export default function MePage() {
 
   async function handleDelete(ideaId: string) {
     if (!user) return;
-    if (!window.confirm(strings.idea.deleteConfirm)) return;
+    setDeleteBusy(true);
+    setDeleteError(false);
     try {
       await deleteIdea(ideaId);
+      setDeletingId(null);
       refresh();
     } catch {
-      // Rules or network error — just refresh to resync.
-      refresh();
+      // Rules or network error — tell the user instead of silently resyncing.
+      setDeleteError(true);
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -107,7 +115,10 @@ export default function MePage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(idea.id)}
+                        onClick={() => {
+                          setDeleteError(false);
+                          setDeletingId(idea.id);
+                        }}
                         className="shrink-0 rounded-full border border-danger/40 px-3 py-1.5 text-xs font-bold text-danger transition hover:bg-danger hover:text-white"
                       >
                         {strings.idea.delete}
@@ -150,6 +161,22 @@ export default function MePage() {
 
       {selected && (
         <IdeaModal idea={selected} onClose={() => setSelectedId(null)} onMutated={refresh} />
+      )}
+
+      {deletingId && (
+        <ConfirmDialog
+          title={strings.idea.deleteConfirm}
+          detail={strings.idea.deleteConfirmDetail}
+          confirmLabel={strings.idea.delete}
+          busy={deleteBusy}
+          onConfirm={() => void handleDelete(deletingId)}
+          onCancel={() => !deleteBusy && setDeletingId(null)}
+        />
+      )}
+      {deleteError && (
+        <p role="alert" className="mt-4 text-sm font-semibold text-danger">
+          {strings.idea.deleteError}
+        </p>
       )}
     </ProtectedRoute>
   );

@@ -14,6 +14,7 @@ const idea: Idea = {
   authorName: "Ada",
   upvoteUserIds: [],
   upvoteCount: 3,
+  supportCount: 0,
   moderationFeedback: null,
   timeline: [],
   createdAt: null,

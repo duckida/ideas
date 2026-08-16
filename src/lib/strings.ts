@@ -44,6 +44,8 @@ export const strings = {
     supportedBy: "Supported by {name}",
     delete: "Delete",
     deleteConfirm: "Are you sure you want to delete this idea?",
+    deleteConfirmDetail: "This can't be undone.",
+    deleteError: "Couldn't delete this idea. Please try again.",
     edit: "Edit",
     author: "by {name}",
     statusPending: "Pending review",

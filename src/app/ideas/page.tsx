@@ -10,13 +10,12 @@ import { IdeaCard } from "@/components/IdeaCard";
 import { IdeaModal } from "@/components/IdeaModal";
 import { FabAdd } from "@/components/FabAdd";
 import { SubmitDialog } from "@/components/SubmitDialog";
-import { getApprovedIdeas, getIdeaSupports } from "@/lib/api";
+import { getApprovedIdeas } from "@/lib/api";
 import { strings } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
 
 export default function IdeasPage() {
   const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [supportCounts, setSupportCounts] = useState<Record<string, number>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSubmit, setShowSubmit] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -27,17 +26,9 @@ export default function IdeasPage() {
   useEffect(() => {
     let active = true;
     getApprovedIdeas()
-      .then(async (list) => {
+      .then((list) => {
         if (!active) return;
         setIdeas(list);
-        const counts: Record<string, number> = {};
-        await Promise.all(
-          list.map(async (idea) => {
-            const supports = await getIdeaSupports(idea.id);
-            counts[idea.id] = supports.length;
-          }),
-        );
-        setSupportCounts(counts);
       })
       .catch(() => {})
       .finally(() => {
@@ -69,7 +60,7 @@ export default function IdeasPage() {
               <IdeaCard
                 key={idea.id}
                 idea={idea}
-                supportCount={supportCounts[idea.id] ?? 0}
+                supportCount={idea.supportCount}
                 onOpen={() => setSelectedId(idea.id)}
               />
             ))}

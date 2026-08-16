@@ -10,9 +10,15 @@ import {
   OAuthProvider,
   type User,
 } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  runTransaction,
+} from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { DEFAULT_ROLE, type Role } from "@/lib/types";
+import { LAST_IDEA_AT_FIELD } from "@/lib/defs";
 
 /** OAuth provider for Microsoft / Office 365 school accounts. */
 export function microsoftProvider(): OAuthProvider {
@@ -73,17 +79,28 @@ export async function loadUserDoc(user: User): Promise<AuthUser> {
   };
 }
 
-/** Creates users/{uid} on first sign-in so the rules' role lookup works. */
+/**
+ * Creates users/{uid} on first sign-in so the rules' role lookup works.
+ * Runs in a transaction: if two sign-ins race, the loser re-reads and skips,
+ * so a role an admin promoted mid-race can never be clobbered back to
+ * `student` (issue #5 — getDoc-then-setDoc TOCTOU).
+ */
 async function ensureUserDoc(user: User): Promise<void> {
   const db = getFirestore(getFirebaseApp());
   const ref = doc(db, "users", user.uid);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      uid: user.uid,
-      email: user.email ?? "",
-      displayName: user.displayName || user.email || "",
-      role: DEFAULT_ROLE,
-    });
-  }
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) {
+      tx.set(ref, {
+        uid: user.uid,
+        email: user.email ?? "",
+        displayName: user.displayName || user.email || "",
+        role: DEFAULT_ROLE,
+        [LAST_IDEA_AT_FIELD]: null,
+      });
+    }
+  });
 }
+
+/** Alias exported for explicit callers (e.g. tests). */
+export { ensureUserDoc };

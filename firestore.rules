@@ -3,6 +3,35 @@ rules_version = '2';
 // Roles live on users/{uid}.role: student (default) | leader | admin.
 // Admins are trusted: they may manage leaders, and their word on the
 // role field is final.
+//
+// IMPORTANT: the limits below mirror src/lib/defs.ts. If you change one,
+// change both.
+
+// Longest allowed idea title.
+// (sync: src/lib/defs.ts MAX_TITLE_LENGTH)
+function maxTitleLength() { return 80; }
+
+// Longest allowed idea description.
+// (sync: src/lib/defs.ts MAX_DESCRIPTION_LENGTH)
+function maxDescriptionLength() { return 2000; }
+
+// Longest timeline update a leader can post.
+// (sync: src/lib/defs.ts MAX_TIMELINE_LENGTH)
+function maxTimelineLength() { return 500; }
+
+// Minimum seconds between two idea submissions per author.
+// (sync: src/lib/defs.ts MIN_IDEA_GAP_SECONDS)
+function minIdeaGapSeconds() { return 10; }
+
+// At most this many pending ideas per author at once. NOTE: rules cannot
+// query collections, so this is enforced client-side atomically in
+// createIdea() (see src/lib/api.ts) and mirrored here as documentation.
+// (sync: src/lib/defs.ts MAX_PENDING_PER_AUTHOR)
+function maxPendingPerAuthor() { return 5; }
+
+// Field on users/{uid} storing the last idea-submission timestamp.
+// (sync: src/lib/defs.ts LAST_IDEA_AT_FIELD)
+function lastIdeaAtField() { return 'lastIdeaAt'; }
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -28,9 +57,12 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid
         && request.resource.data.role == 'student';
-      // A user may update their own display name; only an admin may change role.
+      // A user may update their own display name and rate-limit fields; only
+      // an admin may change role.
       allow update: if isSignedIn() && request.auth.uid == uid
-        && request.resource.data.role == resource.data.role;
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['displayName', lastIdeaAtField()]);
       allow update: if isAdmin();
     }
 
@@ -39,17 +71,46 @@ service cloud.firestore {
       allow read: if isSignedIn();
 
       // Students/leaders submit; every new idea starts in moderation (pending).
+      // Guarded against spam: the submitter must have a users/{uid} doc, the
+      // title/description are length-capped, authorName must match their own
+      // users doc, counters start empty, and a per-author rate window applies
+      // (write time vs users/{uid}.lastIdeaAt). A brand-new doc cannot be
+      // tampered with via extra fields thanks to keys().hasOnly(...).
       allow create: if isSignedIn()
-        && request.resource.data.status == 'pending'
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName
+        && request.resource.data.status == 'pending'
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= maxTitleLength()
+        && request.resource.data.description.size() > 0
+        && request.resource.data.description.size() <= maxDescriptionLength()
+        && request.resource.data.timeline.size() == 0
+        && request.resource.data.moderationFeedback == null
         && request.resource.data.upvoteUserIds.size() == 0
-        && request.resource.data.upvoteCount == 0;
+        && request.resource.data.upvoteCount == 0
+        && request.resource.data.supportCount == 0
+        && request.resource.data.keys().hasOnly([
+            'title', 'description', 'status', 'authorId', 'authorName',
+            'upvoteUserIds', 'upvoteCount', 'supportCount',
+            'moderationFeedback', 'timeline', 'createdAt', 'updatedAt',
+          ])
+        // Rate window: at most one idea submitted every N seconds.
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.lastIdeaAt == null
+          || request.time
+            - get(/databases/$(database)/documents/users/$(request.auth.uid)).data.lastIdeaAt
+            >= duration.value(minIdeaGapSeconds(), 's')
+        );
 
       // Author can delete their own idea.
       allow delete: if isSignedIn()
         && resource.data.authorId == request.auth.uid;
 
       // Authors may update their own pending ideas; leaders/admins moderate.
+      // Leaders also mutate `supportCount`/`timeline` via support + timeline
+      // posts.
       allow update: if isSignedIn() && (
         (resource.data.authorId == request.auth.uid
           && request.resource.data.status == 'pending')
@@ -58,10 +119,19 @@ service cloud.firestore {
     }
 
     // ---- supports (leader endorsements) ----
-    match /supports/{docId} {
+    // Clients read supports via collectionGroup, so the read rule lives on the
+    // recursive-wildcard group. Writes are direct doc writes: the leader id
+    // must match the actor and the name must match their own users doc.
+    match /{path=**}/supports/{docId} {
       allow read: if isSignedIn();
       allow create: if isLeader()
-        && request.resource.data.leaderId == request.auth.uid;
+        && request.resource.data.ideaId.size() > 0
+        && request.resource.data.leaderId == request.auth.uid
+        && request.resource.data.leaderName
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName
+        && request.resource.data.keys().hasOnly([
+            'ideaId', 'leaderId', 'leaderName', 'createdAt',
+          ]);
       allow delete: if isLeader()
         && resource.data.leaderId == request.auth.uid;
     }

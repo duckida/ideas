@@ -14,6 +14,7 @@ const pending: Idea = {
   authorName: "Ada",
   upvoteUserIds: [],
   upvoteCount: 0,
+  supportCount: 0,
   moderationFeedback: null,
   timeline: [],
   createdAt: null,

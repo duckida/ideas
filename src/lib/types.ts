@@ -36,6 +36,9 @@ export interface Idea {
   authorName: string;
   upvoteUserIds: string[];
   upvoteCount: number;
+  /** Denormalized leader-support count; maintained next to the supports
+   * collection so the home feed can render badges without N+1 reads. */
+  supportCount: number;
   moderationFeedback: ModerationFeedback | null;
   timeline: TimelineEntry[];
   createdAt: Timestamp | null;
