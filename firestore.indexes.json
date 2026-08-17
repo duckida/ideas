@@ -31,13 +31,6 @@
         { "fieldPath": "leaderId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "supports",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "ideaId", "order": "ASCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []
