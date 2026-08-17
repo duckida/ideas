@@ -10,11 +10,13 @@ import { IdeaCard } from "@/components/IdeaCard";
 import { IdeaModal } from "@/components/IdeaModal";
 import { FabAdd } from "@/components/FabAdd";
 import { SubmitDialog } from "@/components/SubmitDialog";
-import { getApprovedIdeas } from "@/lib/api";
+import { getApprovedIdeas, setUpvote } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
 
 export default function IdeasPage() {
+  const { user } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSubmit, setShowSubmit] = useState(false);
@@ -22,6 +24,50 @@ export default function IdeasPage() {
   const [tick, setTick] = useState(0);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
+
+  const toggleUpvote = useCallback(
+    async (idea: Idea) => {
+      if (!user) return;
+      const uid = user.uid;
+      const hasUpvoted = idea.upvoteUserIds.includes(uid);
+      const active = !hasUpvoted;
+
+      // Optimistic update
+      setIdeas((prev) =>
+        prev.map((i) =>
+          i.id === idea.id
+            ? {
+                ...i,
+                upvoteUserIds: active
+                  ? [...i.upvoteUserIds, uid]
+                  : i.upvoteUserIds.filter((id) => id !== uid),
+                upvoteCount: Math.max(0, i.upvoteCount + (active ? 1 : -1)),
+              }
+            : i,
+        ),
+      );
+
+      try {
+        await setUpvote(idea.id, uid, active);
+      } catch {
+        // Revert on failure
+        setIdeas((prev) =>
+          prev.map((i) =>
+            i.id === idea.id
+              ? {
+                  ...i,
+                  upvoteUserIds: active
+                    ? i.upvoteUserIds.filter((id) => id !== uid)
+                    : [...i.upvoteUserIds, uid],
+                  upvoteCount: Math.max(0, i.upvoteCount + (active ? -1 : 1)),
+                }
+              : i,
+          ),
+        );
+      }
+    },
+    [user],
+  );
 
   useEffect(() => {
     let active = true;
@@ -62,6 +108,7 @@ export default function IdeasPage() {
                 idea={idea}
                 supportCount={idea.supportCount}
                 onOpen={() => setSelectedId(idea.id)}
+                onUpvote={() => toggleUpvote(idea)}
               />
             ))}
           </div>
