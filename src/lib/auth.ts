@@ -7,6 +7,7 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
+  updateProfile,
   OAuthProvider,
   type User,
 } from "firebase/auth";
@@ -14,11 +15,12 @@ import {
   getFirestore,
   doc,
   getDoc,
+  updateDoc,
   runTransaction,
 } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { DEFAULT_ROLE, type Role } from "@/lib/types";
-import { LAST_IDEA_AT_FIELD } from "@/lib/defs";
+import { LAST_IDEA_AT_FIELD, MAX_DISPLAY_NAME_LENGTH } from "@/lib/defs";
 
 /** OAuth provider for Microsoft / Office 365 school accounts. */
 export function microsoftProvider(): OAuthProvider {
@@ -52,7 +54,16 @@ export interface AuthUser {
   uid: string;
   email: string | null;
   displayName: string;
+  /** See UserDoc.displayNameSet — true once a display name was set. */
+  displayNameSet: boolean;
   role: Role;
+}
+
+/** True when a string looks like an email address. Used to detect legacy user
+ * docs where the old ensureUserDoc stored the email as `displayName` because
+ * the provider had no real name — those accounts still need a name. */
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 /** Loads the role doc for the current Firebase user (defaults to student). */
@@ -62,19 +73,34 @@ export async function loadUserDoc(user: User): Promise<AuthUser> {
   const snap = await getDoc(ref);
 
   if (snap.exists()) {
-    const data = snap.data() as { displayName?: string; role?: Role };
+    const data = snap.data() as {
+      displayName?: string;
+      displayNameSet?: boolean;
+      role?: Role;
+    };
+    const storedName = data.displayName || "";
+    const providerName = user.displayName || "";
+    // The doc flag is authoritative. Legacy docs (created before the flag)
+    // count as "set" only when they hold a real name — an email placeholder
+    // means the user still needs to choose one.
+    const displayNameSet =
+      data.displayNameSet ?? (storedName.length > 0 && !looksLikeEmail(storedName));
     return {
       uid: user.uid,
       email: user.email ?? null,
-      displayName: data.displayName || user.displayName || user.email || "You",
+      displayName: displayNameSet ? storedName || providerName || "" : "",
+      displayNameSet,
       role: data.role ?? DEFAULT_ROLE,
     };
   }
-  // No doc yet — treat as a brand-new student account.
+  // No doc yet — treat as a brand-new student account. displayNameSet only
+  // becomes true once the user doc records it, so the signup gate offers a
+  // name prompt.
   return {
     uid: user.uid,
     email: user.email ?? null,
-    displayName: user.displayName || user.email || "You",
+    displayName: user.displayName || "",
+    displayNameSet: Boolean(user.displayName && !looksLikeEmail(user.displayName)),
     role: DEFAULT_ROLE,
   };
 }
@@ -94,11 +120,34 @@ async function ensureUserDoc(user: User): Promise<void> {
       tx.set(ref, {
         uid: user.uid,
         email: user.email ?? "",
-        displayName: user.displayName || user.email || "",
+        displayName: user.displayName || "",
+        // True when the provider handed us a real name (e.g. Microsoft),
+        // false for email/password signups so the one-time name gate shows.
+        displayNameSet: Boolean(user.displayName && !looksLikeEmail(user.displayName)),
         role: DEFAULT_ROLE,
         [LAST_IDEA_AT_FIELD]: null,
       });
     }
+  });
+}
+
+/** Persist the display name chosen at the one-time signup gate. */
+export async function setUserDisplayName(
+  displayName: string,
+  firestore = getFirestore(getFirebaseApp()),
+): Promise<void> {
+  const name = displayName.trim();
+  if (!name) throw new Error("display_name_required");
+  if (name.length > MAX_DISPLAY_NAME_LENGTH) {
+    throw new Error("display_name_too_long");
+  }
+  const auth = getAuth(getFirebaseApp());
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("not_signed_in");
+  await updateProfile(auth.currentUser, { displayName: name });
+  await updateDoc(doc(firestore, "users", uid), {
+    displayName: name,
+    displayNameSet: true,
   });
 }
 

@@ -28,6 +28,14 @@ export const strings = {
     emailButton: "Sign in with email",
     emailError: "Please enter a valid email and password.",
     genericError: "Something went wrong. Please try again.",
+    nameSetupTitle: "What should we call you?",
+    nameSetupHint: "Pick the name others will see on your ideas and in the leaderboard. You can change it later in your profile.",
+    nameLabel: "Display name",
+    namePlaceholder: "e.g. Ada Lovelace",
+    nameSave: "Save name",
+    nameRequiredError: "Please enter a name.",
+    nameTooLongError: "That name is too long.",
+    nameSaveError: "Couldn't save your name. Please try again.",
   },
 
   ideasHome: {

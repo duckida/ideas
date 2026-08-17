@@ -52,6 +52,9 @@ export interface UserDoc {
   uid: string;
   email: string;
   displayName: string;
+  /** False until the user picks a display name once at signup (or has a real
+   * one from the provider). Drives the one-time NameSetup gate. */
+  displayNameSet: boolean;
   role: Role;
   createdAt: Timestamp | null;
 }

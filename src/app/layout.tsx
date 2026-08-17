@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { strings } from "@/lib/strings";
 import { AuthProvider } from "@/context/AuthContext";
+import { ProfileGate } from "@/components/ProfileGate";
 
 const kakaoBigSans = localFont({
   src: [
@@ -29,7 +30,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${kakaoBigSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ProfileGate>{children}</ProfileGate>
+        </AuthProvider>
       </body>
     </html>
   );

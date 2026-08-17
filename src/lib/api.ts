@@ -361,6 +361,7 @@ export async function getUserByEmail(
     uid: first.id,
     email: d.email ?? "",
     displayName: d.displayName ?? "",
+    displayNameSet: d.displayNameSet ?? Boolean(d.displayName),
     role: (d.role as Role) ?? DEFAULT_ROLE,
     createdAt: d.createdAt ?? null,
   };
@@ -378,6 +379,7 @@ export async function getLeaders(
       uid: s.id,
       email: d.email ?? "",
       displayName: d.displayName ?? "",
+      displayNameSet: d.displayNameSet ?? Boolean(d.displayName),
       role: (d.role as Role) ?? DEFAULT_ROLE,
       createdAt: d.createdAt ?? null,
     };

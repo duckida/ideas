@@ -19,15 +19,23 @@ export const authControl = {
   role: null as AuthUser["role"] | null,
   isLeader: false,
   isAdmin: false,
+  refreshUser: vi.fn(async () => {}),
   signOut: vi.fn(async () => {}),
 };
 
-export function setAuthUser(user: AuthUser | null) {
-  authControl.user = user;
-  authControl.role = user?.role ?? null;
-  authControl.isLeader = user?.role === "leader" || user?.role === "admin";
-  authControl.isAdmin = user?.role === "admin";
-  authControl.firebaseUser = user ? { uid: user.uid } : null;
+export function setAuthUser(
+  user:
+    | (Omit<AuthUser, "displayNameSet"> & { displayNameSet?: boolean })
+    | null,
+) {
+  const normalized = user
+    ? { ...user, displayNameSet: user.displayNameSet ?? Boolean(user.displayName) }
+    : null;
+  authControl.user = normalized;
+  authControl.role = normalized?.role ?? null;
+  authControl.isLeader = normalized?.role === "leader" || normalized?.role === "admin";
+  authControl.isAdmin = normalized?.role === "admin";
+  authControl.firebaseUser = normalized ? { uid: normalized.uid } : null;
 }
 
 /** Snapshot of the current auth state to hand to useAuth(). */

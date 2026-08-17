@@ -29,6 +29,16 @@ function minIdeaGapSeconds() { return 10; }
 // (sync: src/lib/defs.ts MAX_PENDING_PER_AUTHOR)
 function maxPendingPerAuthor() { return 5; }
 
+// Longest author-name label on an idea. We only cap the length, not compare
+// it to users/{uid}.displayName, since display names drift (edits, provider
+// differences) while `authorId == auth.uid` is the real identity check.
+// (sync: src/lib/defs.ts MAX_AUTHOR_NAME_LENGTH)
+function maxAuthorNameLength() { return 120; }
+
+// Longest display name a user can set on their own profile.
+// (sync: src/lib/defs.ts MAX_DISPLAY_NAME_LENGTH)
+function maxDisplayNameLength() { return 120; }
+
 // Field on users/{uid} storing the last idea-submission timestamp.
 // (sync: src/lib/defs.ts LAST_IDEA_AT_FIELD)
 function lastIdeaAtField() { return 'lastIdeaAt'; }
@@ -56,13 +66,27 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid
-        && request.resource.data.role == 'student';
-      // A user may update their own display name and rate-limit fields; only
-      // an admin may change role.
+        && request.resource.data.role == 'student'
+        && request.resource.data.displayNameSet is bool;
+      // A user may update their own display name (once-set flag + rate-limit
+      // field); only an admin may change role. The length/type guards only
+      // apply when that field is actually being written, so the server-side
+      // lastIdeaAt stamp from createIdea still passes.
       allow update: if isSignedIn() && request.auth.uid == uid
         && request.resource.data.role == resource.data.role
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['displayName', lastIdeaAtField()]);
+          .hasOnly(['displayName', 'displayNameSet', lastIdeaAtField()])
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayName'])
+          || (
+            request.resource.data.displayName.size() > 0
+            && request.resource.data.displayName.size() <= maxDisplayNameLength()
+          )
+        )
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayNameSet'])
+          || request.resource.data.displayNameSet is bool
+        );
       allow update: if isAdmin();
     }
 
@@ -72,15 +96,16 @@ service cloud.firestore {
 
       // Students/leaders submit; every new idea starts in moderation (pending).
       // Guarded against spam: the submitter must have a users/{uid} doc, the
-      // title/description are length-capped, authorName must match their own
-      // users doc, counters start empty, and a per-author rate window applies
+      // title/description are length-capped, the author-name label is
+      // length-capped (identity is authorId == auth.uid, not the label),
+      // counters start empty, and a per-author rate window applies
       // (write time vs users/{uid}.lastIdeaAt). A brand-new doc cannot be
       // tampered with via extra fields thanks to keys().hasOnly(...).
       allow create: if isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && request.resource.data.authorId == request.auth.uid
-        && request.resource.data.authorName
-          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName
+        && request.resource.data.authorName.size() > 0
+        && request.resource.data.authorName.size() <= maxAuthorNameLength()
         && request.resource.data.status == 'pending'
         && request.resource.data.title.size() > 0
         && request.resource.data.title.size() <= maxTitleLength()

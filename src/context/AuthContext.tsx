@@ -5,6 +5,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -12,7 +13,12 @@ import {
 } from "react";
 import { getAuth, onIdTokenChanged, type User } from "firebase/auth";
 import { getFirebaseApp } from "@/lib/firebase";
-import { loadUserDoc, signOutUser, type AuthUser } from "@/lib/auth";
+import {
+  ensureUserDoc,
+  loadUserDoc,
+  signOutUser,
+  type AuthUser,
+} from "@/lib/auth";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -23,6 +29,8 @@ interface AuthContextValue {
   role: AuthUser["role"] | null;
   isLeader: boolean;
   isAdmin: boolean;
+  /** Re-read the users/{uid} doc (e.g. after the one-time name setup). */
+  refreshUser: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -43,6 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
+        // First visit after a persisted session may never have had
+        // ensureUserDoc run (it's called from signInWith* only). Create the
+        // doc now so the name gate and role lookups work on refresh.
+        await ensureUserDoc(user);
         setAuthUser(await loadUserDoc(user));
       } catch {
         // Role doc unreadable — fall back to a student profile so the UI
@@ -50,7 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthUser({
           uid: user.uid,
           email: user.email ?? null,
-          displayName: user.displayName || user.email || "You",
+          displayName: "",
+          displayNameSet: false,
           role: "student",
         });
       } finally {
@@ -58,6 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
     return unsubscribe;
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    const auth = getAuth(getFirebaseApp());
+    const current = auth.currentUser;
+    if (!current) return;
+    try {
+      setAuthUser(await loadUserDoc(current));
+    } catch {
+      // Keep the previous profile on a failed re-read.
+    }
   }, []);
 
   const role = authUser?.role ?? null;
@@ -69,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role,
     isLeader: role === "leader" || role === "admin",
     isAdmin: role === "admin",
+    refreshUser,
     signOut: signOutUser,
   };
 
