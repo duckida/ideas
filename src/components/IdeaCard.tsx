@@ -21,28 +21,32 @@ export function IdeaCard({ idea, supportCount, onOpen }: IdeaCardProps) {
       onClick={onOpen}
       className="flex flex-col gap-3 rounded-[1.25rem] border border-line bg-surface p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="text-lg font-bold leading-snug text-ink">{idea.title}</h3>
-        <span className="shrink-0 rounded-full bg-kakao-soft px-2.5 py-1 text-xs font-bold text-ink">
-          {idea.upvoteCount} {strings.idea.upvotes}
-        </span>
-      </div>
+      <h3 className="text-lg font-bold leading-snug text-ink">{idea.title}</h3>
 
       <p className="line-clamp-3 text-sm leading-relaxed text-muted">
         {idea.description}
       </p>
 
-      <div className="mt-auto flex items-center justify-between gap-3">
-        <span className="text-xs font-medium text-muted">
-          {idea.showAuthorName
-            ? t(strings.idea.author, { name: idea.authorName })
-            : strings.idea.anonymous}
-        </span>
-        {hasSupport && (
-          <span className="rounded-full bg-kakao px-2.5 py-1 text-xs font-bold text-ink">
-            {strings.ideasHome.supportedByLeaders}
+      <div className="mt-auto flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-medium text-muted">
+            {idea.showAuthorName
+              ? `by ${idea.authorName}`
+              : strings.idea.anonymous}
           </span>
-        )}
+          {hasSupport && (
+            <span className="text-xs font-medium text-muted">
+              {strings.ideasHome.supportedByLeaders}
+            </span>
+          )}
+        </div>
+
+        <span className="shrink-0 flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs font-bold text-ink">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 2L10 8H2L6 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {idea.upvoteCount}
+        </span>
       </div>
     </button>
   );
