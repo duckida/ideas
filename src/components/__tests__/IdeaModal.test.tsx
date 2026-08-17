@@ -28,7 +28,7 @@ const api = vi.hoisted(() => ({
   unsupportIdea: vi.fn(async () => {}),
   postTimelineUpdate: vi.fn(async () => {}),
   getIdeaSupports: vi.fn(async () => []),
-  getIdea: vi.fn(async () => null),
+  getIdea: vi.fn(async () => null as Idea | null),
 }));
 
 vi.mock("@/lib/api", () => api);
@@ -46,10 +46,9 @@ beforeEach(() => {
 });
 
 describe("IdeaModal", () => {
-  it("shows the full description and overview tab by default", async () => {
+  it("shows the full description and timeline heading by default", async () => {
     render(<IdeaModal idea={idea} onClose={vi.fn()} onMutated={vi.fn()} />);
     expect(await screen.findByText(/Charge your phone in the sun/)).toBeInTheDocument();
-    expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Timeline")).toBeInTheDocument();
   });
 
@@ -64,7 +63,7 @@ describe("IdeaModal", () => {
     const user = userEvent.setup();
     render(<IdeaModal idea={idea} onClose={vi.fn()} onMutated={vi.fn()} />);
 
-    const upvote = await screen.findByRole("button", { name: /Upvote/ });
+    const upvote = await screen.findByRole("button", { name: /upvotes/ });
     await user.click(upvote);
 
     await waitFor(() => expect(api.setUpvote).toHaveBeenCalledWith("i1", "u2", true));
@@ -90,7 +89,7 @@ describe("IdeaModal", () => {
     );
   });
 
-  it("switches to the timeline tab showing embedded updates", async () => {
+  it("shows timeline updates when the idea has them", async () => {
     setAuthUser({ uid: "u2", email: "b@x.com", displayName: "Bo", role: "student" });
     const withTimeline: Idea = {
       ...idea,
@@ -104,11 +103,12 @@ describe("IdeaModal", () => {
         },
       ],
     };
-    const user = userEvent.setup();
+    api.getIdea.mockResolvedValue(withTimeline);
     render(<IdeaModal idea={withTimeline} onClose={vi.fn()} onMutated={vi.fn()} />);
 
-    await user.click(screen.getByText("Timeline"));
-    expect(await screen.findByText("Funding secured!")).toBeInTheDocument();
-    expect(screen.getByText(/Ms. Kim/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Funding secured!/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Ms\. Kim/)).toBeInTheDocument();
   });
 });

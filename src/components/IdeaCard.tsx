@@ -2,33 +2,32 @@
 
 // IdeaCard — a compact card in the ideas grid. Clicking opens the IdeaModal.
 
-import { strings, t } from "@/lib/strings";
-import type { Idea } from "@/lib/types";
+import { strings } from "@/lib/strings";
+import type { Idea, SupportDoc } from "@/lib/types";
 
 interface IdeaCardProps {
   idea: Idea;
-  /** Number of distinct leaders supporting this idea. */
-  supportCount: number;
+  /** Leaders supporting this idea. */
+  supports: SupportDoc[];
   currentUserId?: string;
   onOpen: () => void;
   onUpvote: () => void;
 }
 
-export function IdeaCard({ idea, supportCount, currentUserId, onOpen, onUpvote }: IdeaCardProps) {
-  const hasSupport = supportCount > 0;
+export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: IdeaCardProps) {
+  const hasSupport = supports.length > 0;
   const hasUpvoted = currentUserId !== undefined && idea.upvoteUserIds.includes(currentUserId);
 
   return (
     <div
+      onClick={onOpen}
       className="flex flex-col gap-3 rounded-[1.25rem] border border-line bg-surface p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      <button type="button" onClick={onOpen} className="flex flex-col gap-3 text-left">
-        <h3 className="text-lg font-bold leading-snug text-ink">{idea.title}</h3>
+      <h3 className="text-lg font-bold leading-snug text-ink">{idea.title}</h3>
 
-        <p className="line-clamp-3 text-sm leading-relaxed text-muted">
-          {idea.description}
-        </p>
-      </button>
+      <p className="line-clamp-3 text-sm leading-relaxed text-muted">
+        {idea.description}
+      </p>
 
       <div className="mt-auto flex items-end justify-between gap-3">
         <div className="flex flex-col gap-0.5">
@@ -37,9 +36,12 @@ export function IdeaCard({ idea, supportCount, currentUserId, onOpen, onUpvote }
               ? `by ${idea.authorName}`
               : strings.idea.anonymous}
           </span>
+          {idea.showAuthorName && idea.authorTitle && (
+            <span className="text-xs font-semibold text-muted">{idea.authorTitle}</span>
+          )}
           {hasSupport && (
             <span className="text-xs font-medium text-muted">
-              {strings.ideasHome.supportedByLeaders}
+              {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}
             </span>
           )}
         </div>

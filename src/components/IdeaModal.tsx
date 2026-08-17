@@ -13,7 +13,7 @@ import {
   getIdeaSupports,
   getIdea,
 } from "@/lib/api";
-import { strings, t } from "@/lib/strings";
+import { strings } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
 
 interface IdeaModalProps {
@@ -26,7 +26,7 @@ interface IdeaModalProps {
 export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalProps) {
   const { user, isLeader } = useAuth();
   const [idea, setIdea] = useState<Idea>(initialIdea);
-  const [supports, setSupports] = useState<Array<{ leaderId: string; leaderName: string }>>([]);
+  const [supports, setSupports] = useState<Array<{ leaderId: string; leaderName: string; leaderTitle?: string }>>([]);
   const [busy, setBusy] = useState(false);
   const [post, setPost] = useState("");
   const [reloadTick, setReloadTick] = useState(0);
@@ -76,8 +76,8 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
         await unsupportIdea(idea.id, uid);
         setSupports((prev) => prev.filter((s) => s.leaderId !== uid));
       } else {
-        await supportIdea(idea.id, { uid, displayName: user.displayName });
-        setSupports((prev) => [...prev, { leaderId: uid, leaderName: user.displayName }]);
+        await supportIdea(idea.id, { uid, displayName: user.displayName, title: user.title });
+        setSupports((prev) => [...prev, { leaderId: uid, leaderName: user.displayName, leaderTitle: user.title }]);
       }
       setReloadTick((t) => t + 1);
       onMutated();
@@ -143,10 +143,21 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
               ? `by ${idea.authorName}`
               : strings.idea.anonymous}
           </span>
+          {idea.showAuthorName && idea.authorTitle && (
+            <span className="text-xs font-semibold">({idea.authorTitle})</span>
+          )}
           {supports.length > 0 && (
-            <span>Supported by {supports.map((s) => s.leaderName).join(", ")}</span>
+            <span>Supported by {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}</span>
           )}
         </div>
+
+        {/* Moderation feedback */}
+        {idea.moderationFeedback && (
+          <div className="mt-3 rounded-xl border border-kakao bg-kakao-soft p-3">
+            <p className="text-xs font-bold text-ink">{strings.idea.moderationFeedback}</p>
+            <p className="mt-1 text-sm text-muted">{idea.moderationFeedback.message}</p>
+          </div>
+        )}
 
         {/* Description */}
         <p className="mt-4 whitespace-pre-wrap leading-relaxed text-foreground">

@@ -42,6 +42,8 @@ export const strings = {
     heading: "Ideas",
     empty: "No ideas yet. Be the first to share one!",
     supportedByLeaders: "Supported by leaders",
+    sortNew: "New",
+    sortUpvotes: "Upvotes",
   },
 
   idea: {
@@ -62,6 +64,13 @@ export const strings = {
     statusChangesRequested: "Changes requested",
     statusRejected: "Rejected",
     statusLabel: "Status",
+    moderationFeedback: "Feedback from moderator",
+    titleLabel: "Title",
+    descriptionLabel: "Description",
+    editSubmit: "Save & Resubmit",
+    editCancel: "Cancel",
+    editSuccess: "Idea resubmitted for review.",
+    editError: "Couldn't save changes. Please try again.",
   },
 
   modal: {
@@ -113,6 +122,12 @@ export const strings = {
     supported: "Supported ideas",
     supportedEmpty: "You haven't supported any ideas yet.",
     timelineHeading: "Timeline updates",
+    title: "Your title",
+    titlePlaceholder: "e.g. Digital Leader, Head Girl",
+    titleSaved: "Title saved.",
+    titleError: "Couldn't save title. Please try again.",
+    editResubmit: "Edit & Resubmit",
+    resubmit: "Resubmit for review",
   },
 
   admin: {
@@ -127,6 +142,14 @@ export const strings = {
     alreadyLeader: "That user is already a leader.",
     removed: "Leader removed.",
     added: "Leader added.",
+  },
+
+  leaderboard: {
+    heading: "Leaderboard",
+    empty: "No moderation activity yet.",
+    ideasModerated: "Ideas moderated",
+    approved: "Approved",
+    sentBack: "Sent back",
   },
 
   errors: {

@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { IdeaCard } from "@/components/IdeaCard";
 import { setAuthUser } from "@/test/authMock";
-import type { Idea } from "@/lib/types";
+import type { Idea, SupportDoc } from "@/lib/types";
 
 const idea: Idea = {
   id: "i1",
@@ -22,39 +22,53 @@ const idea: Idea = {
   updatedAt: null,
 };
 
+const noSupports: SupportDoc[] = [];
+
+function makeSupport(name: string, title?: string): SupportDoc {
+  return { ideaId: "i1", leaderId: `l_${name}`, leaderName: name, leaderTitle: title, createdAt: null };
+}
+
 beforeEach(() => setAuthUser(null));
 
 describe("IdeaCard", () => {
   it("shows title, description, author and upvote count", () => {
-    render(<IdeaCard idea={{ ...idea, id: "i1" }} supportCount={0} onOpen={vi.fn()} />);
+    render(<IdeaCard idea={{ ...idea, id: "i1" }} supports={noSupports} onOpen={vi.fn()} onUpvote={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Solar benches" })).toBeInTheDocument();
     expect(screen.getByText(/Charge your phone in the sun/)).toBeInTheDocument();
     expect(screen.getByText(/Ada/)).toBeInTheDocument();
-    expect(screen.getByText("3 upvotes")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  it("shows the supported-by-leaders badge when leaders back it", () => {
-    render(<IdeaCard idea={{ ...idea, id: "i1" }} supportCount={2} onOpen={vi.fn()} />);
-    expect(screen.getByText("Supported by leaders")).toBeInTheDocument();
+  it("shows leader names and titles when supported", () => {
+    render(
+      <IdeaCard
+        idea={{ ...idea, id: "i1" }}
+        supports={[makeSupport("Ms. Kim", "Digital Leader"), makeSupport("Mr. Park")]}
+        onOpen={vi.fn()}
+        onUpvote={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Ms\. Kim \(Digital Leader\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Mr\. Park/)).toBeInTheDocument();
   });
 
   it("hides the author when showAuthorName is false", () => {
-    render(<IdeaCard idea={{ ...idea, id: "i1", showAuthorName: false }} supportCount={0} onOpen={vi.fn()} />);
+    render(<IdeaCard idea={{ ...idea, id: "i1", showAuthorName: false }} supports={noSupports} onOpen={vi.fn()} onUpvote={vi.fn()} />);
     expect(screen.getByText("Anonymous")).toBeInTheDocument();
     expect(screen.queryByText(/Ada/)).not.toBeInTheDocument();
   });
 
-  it("does not show the badge without support", () => {
-    render(<IdeaCard idea={{ ...idea, id: "i1" }} supportCount={0} onOpen={vi.fn()} />);
-    expect(screen.queryByText("Supported by leaders")).not.toBeInTheDocument();
+  it("does not show support text without support", () => {
+    render(<IdeaCard idea={{ ...idea, id: "i1" }} supports={noSupports} onOpen={vi.fn()} onUpvote={vi.fn()} />);
+    expect(screen.queryByText(/Ms\. Kim/)).not.toBeInTheDocument();
   });
 
   it("calls onOpen when clicked", async () => {
     const user = userEvent.setup();
     const onOpen = vi.fn();
-    render(<IdeaCard idea={{ ...idea, id: "i1" }} supportCount={0} onOpen={onOpen} />);
-    await user.click(screen.getByRole("button", { name: /Solar benches/ }));
+    render(<IdeaCard idea={{ ...idea, id: "i1" }} supports={noSupports} onOpen={onOpen} onUpvote={vi.fn()} />);
+    await user.click(screen.getByRole("heading", { name: /Solar benches/ }));
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });

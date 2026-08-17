@@ -34,6 +34,8 @@ export interface Idea {
   status: IdeaStatus;
   authorId: string;
   authorName: string;
+  /** Optional leader title of the author (e.g. "Digital Leader"). */
+  authorTitle?: string;
   upvoteUserIds: string[];
   upvoteCount: number;
   /** Denormalized leader-support count; maintained next to the supports
@@ -56,6 +58,8 @@ export interface UserDoc {
    * one from the provider). Drives the one-time NameSetup gate. */
   displayNameSet: boolean;
   role: Role;
+  /** Optional leader title (e.g. "Digital Leader", "Head Girl"). */
+  title?: string;
   createdAt: Timestamp | null;
 }
 
@@ -64,5 +68,6 @@ export interface SupportDoc {
   ideaId: string;
   leaderId: string;
   leaderName: string;
+  leaderTitle?: string;
   createdAt: Timestamp | null;
 }

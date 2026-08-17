@@ -10,18 +10,25 @@ import { IdeaCard } from "@/components/IdeaCard";
 import { IdeaModal } from "@/components/IdeaModal";
 import { FabAdd } from "@/components/FabAdd";
 import { SubmitDialog } from "@/components/SubmitDialog";
-import { getApprovedIdeas, setUpvote } from "@/lib/api";
+import { getApprovedIdeas, getIdeaSupports, setUpvote } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
-import type { Idea } from "@/lib/types";
+import type { Idea, SupportDoc } from "@/lib/types";
 
 export default function IdeasPage() {
   const { user } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [supportsMap, setSupportsMap] = useState<Map<string, SupportDoc[]>>(new Map());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSubmit, setShowSubmit] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+  const [sort, setSort] = useState<"new" | "upvotes">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("ideas_sort") as "new" | "upvotes") || "new";
+    }
+    return "new";
+  });
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
@@ -71,10 +78,17 @@ export default function IdeasPage() {
 
   useEffect(() => {
     let active = true;
-    getApprovedIdeas()
-      .then((list) => {
+    getApprovedIdeas(sort)
+      .then(async (list) => {
         if (!active) return;
         setIdeas(list);
+        const entries = await Promise.all(
+          list.map(async (idea) => {
+            const sups = await getIdeaSupports(idea.id);
+            return [idea.id, sups] as const;
+          }),
+        );
+        if (active) setSupportsMap(new Map(entries));
       })
       .catch(() => {})
       .finally(() => {
@@ -83,18 +97,49 @@ export default function IdeasPage() {
     return () => {
       active = false;
     };
-  }, [tick]);
+  }, [tick, sort]);
 
   const selected = useMemo(
     () => ideas.find((i) => i.id === selectedId) ?? null,
     [ideas, selectedId],
   );
 
+  function handleSort(value: "new" | "upvotes") {
+    setSort(value);
+    localStorage.setItem("ideas_sort", value);
+  }
+
   return (
     <ProtectedRoute>
       <Navbar />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-        <h1 className="text-2xl font-extrabold text-ink">{strings.ideasHome.heading}</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-extrabold text-ink">{strings.ideasHome.heading}</h1>
+          <div className="flex rounded-full border border-line bg-surface p-1">
+            <button
+              type="button"
+              onClick={() => handleSort("new")}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                sort === "new"
+                  ? "bg-ink text-white"
+                  : "text-muted hover:bg-background"
+              }`}
+            >
+              {strings.ideasHome.sortNew}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSort("upvotes")}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                sort === "upvotes"
+                  ? "bg-ink text-white"
+                  : "text-muted hover:bg-background"
+              }`}
+            >
+              {strings.ideasHome.sortUpvotes}
+            </button>
+          </div>
+        </div>
 
         {loading ? (
           <p className="mt-8 text-muted">{strings.common.loading}</p>
@@ -106,7 +151,7 @@ export default function IdeasPage() {
               <IdeaCard
                 key={idea.id}
                 idea={idea}
-                supportCount={idea.supportCount}
+                supports={supportsMap.get(idea.id) ?? []}
                 currentUserId={user?.uid}
                 onOpen={() => setSelectedId(idea.id)}
                 onUpvote={() => toggleUpvote(idea)}

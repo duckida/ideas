@@ -64,22 +64,6 @@ describe("ModerationItem", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
-  it("rejects with a message", async () => {
-    const user = userEvent.setup();
-    const onDone = vi.fn();
-    render(<ModerationItem idea={pending} onDone={onDone} />);
-
-    await user.click(screen.getByRole("button", { name: "Reject" }));
-    const textbox = screen.getByRole("textbox");
-    await user.type(textbox, "Out of scope");
-    await user.click(screen.getByRole("button", { name: "Reject idea" }));
-
-    await waitFor(() =>
-      expect(api.moderateIdea).toHaveBeenCalledWith("i1", "reject", "Out of scope", "mod1"),
-    );
-    expect(onDone).toHaveBeenCalled();
-  });
-
   it("requests changes with a message", async () => {
     const user = userEvent.setup();
     render(<ModerationItem idea={pending} onDone={vi.fn()} />);

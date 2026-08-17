@@ -69,13 +69,13 @@ service cloud.firestore {
         && request.resource.data.role == 'student'
         && request.resource.data.displayNameSet is bool;
       // A user may update their own display name (once-set flag + rate-limit
-      // field); only an admin may change role. The length/type guards only
-      // apply when that field is actually being written, so the server-side
-      // lastIdeaAt stamp from createIdea still passes.
+      // field) or title; only an admin may change role. The length/type guards
+      // only apply when that field is actually being written, so the
+      // server-side lastIdeaAt stamp from createIdea still passes.
       allow update: if isSignedIn() && request.auth.uid == uid
         && request.resource.data.role == resource.data.role
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['displayName', 'displayNameSet', lastIdeaAtField()])
+          .hasOnly(['displayName', 'displayNameSet', 'title', lastIdeaAtField()])
         && (
           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayName'])
           || (
@@ -86,6 +86,10 @@ service cloud.firestore {
         && (
           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayNameSet'])
           || request.resource.data.displayNameSet is bool
+        )
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['title'])
+          || request.resource.data.title.size() <= 60
         );
       allow update: if isAdmin();
     }
@@ -119,8 +123,9 @@ service cloud.firestore {
         && request.resource.data.showAuthorName is bool
         && request.resource.data.keys().hasOnly([
             'title', 'description', 'status', 'authorId', 'authorName',
-            'upvoteUserIds', 'upvoteCount', 'supportCount', 'showAuthorName',
-            'moderationFeedback', 'timeline', 'createdAt', 'updatedAt',
+            'authorTitle', 'upvoteUserIds', 'upvoteCount', 'supportCount',
+            'showAuthorName', 'moderationFeedback', 'timeline', 'createdAt',
+            'updatedAt',
           ])
         // Rate window: at most one idea submitted every N seconds.
         && (
@@ -134,12 +139,13 @@ service cloud.firestore {
       allow delete: if isSignedIn()
         && resource.data.authorId == request.auth.uid;
 
-      // Authors may update their own pending ideas; leaders/admins moderate.
+      // Authors may update their own pending or changes_requested ideas;
+      // leaders/admins moderate.
       // Leaders also mutate `supportCount`/`timeline` via support + timeline
       // posts.
       allow update: if isSignedIn() && (
         (resource.data.authorId == request.auth.uid
-          && request.resource.data.status == 'pending')
+          && request.resource.data.status in ['pending', 'changes_requested'])
         || isLeader()
       );
     }
@@ -156,7 +162,7 @@ service cloud.firestore {
         && request.resource.data.leaderName
           == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName
         && request.resource.data.keys().hasOnly([
-            'ideaId', 'leaderId', 'leaderName', 'createdAt',
+            'ideaId', 'leaderId', 'leaderName', 'leaderTitle', 'createdAt',
           ]);
       allow delete: if isLeader()
         && resource.data.leaderId == request.auth.uid;

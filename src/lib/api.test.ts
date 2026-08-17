@@ -228,18 +228,6 @@ describe("moderateIdea", () => {
       at: { __type: "serverTimestamp" },
     });
   });
-
-  it("reject sets rejected with a message", async () => {
-    await moderateIdea("i1", "reject", "Out of scope for this year", "mod1", db);
-
-    const update = firestoreModule.updateDoc.mock.calls[0][1] as Record<string, unknown>;
-    expect(update.status).toBe("rejected");
-    expect(update.moderationFeedback).toEqual({
-      message: "Out of scope for this year",
-      by: "mod1",
-      at: { __type: "serverTimestamp" },
-    });
-  });
 });
 
 describe("supportIdea / unsupportIdea", () => {
@@ -252,6 +240,7 @@ describe("supportIdea / unsupportIdea", () => {
         ideaId: "i1",
         leaderId: "u9",
         leaderName: "Ms. Kim",
+        leaderTitle: null,
         createdAt: { __type: "serverTimestamp" },
       },
     );

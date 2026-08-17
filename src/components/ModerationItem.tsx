@@ -1,8 +1,8 @@
 "use client";
 
 // ModerationItem — a single pending idea in the review queue. The moderator
-// can approve, or request changes / reject, both with an optional message
-// that is stored and shown back to the author.
+// can approve, or send back with a message that is stored and shown back
+// to the author.
 
 import { useState } from "react";
 import { moderateIdea, type ModerationAction } from "@/lib/api";
@@ -17,7 +17,7 @@ interface ModerationItemProps {
 
 export function ModerationItem({ idea, onDone }: ModerationItemProps) {
   const { user } = useAuth();
-  const [mode, setMode] = useState<"idle" | "request_changes" | "reject">("idle");
+  const [mode, setMode] = useState<"idle" | "request_changes">("idle");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -67,14 +67,6 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
           >
             {strings.moderation.requestChanges}
           </button>
-          <button
-            type="button"
-            onClick={() => setMode("reject")}
-            disabled={busy}
-            className="rounded-full border border-danger/40 px-4 py-2 text-sm font-bold text-danger transition hover:bg-danger hover:text-white disabled:opacity-50"
-          >
-            {strings.moderation.reject}
-          </button>
         </div>
       ) : (
         <form
@@ -107,9 +99,7 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
               disabled={busy}
               className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50"
             >
-              {mode === "request_changes"
-                ? strings.moderation.requestChangesConfirm
-                : strings.moderation.rejectConfirm}
+              {strings.moderation.requestChangesConfirm}
             </button>
           </div>
         </form>

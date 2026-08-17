@@ -50,6 +50,7 @@ export interface NewIdeaInput {
   description: string;
   authorId: string;
   authorName: string;
+  authorTitle?: string;
   showAuthorName: boolean;
 }
 
@@ -113,6 +114,7 @@ export async function createIdea(
       status: "pending",
       authorId: input.authorId,
       authorName: input.authorName,
+      authorTitle: input.authorTitle ?? null,
       showAuthorName: input.showAuthorName,
       upvoteUserIds: [],
       upvoteCount: 0,
@@ -141,10 +143,10 @@ export async function setUpvote(
   });
 }
 
-export type ModerationAction = "approve" | "request_changes" | "reject";
+export type ModerationAction = "approve" | "request_changes";
 
 /**
- * Moderate an idea. `approve` needs no message; the other two attach
+ * Moderate an idea. `approve` needs no message; `request_changes` attaches
  * `moderationFeedback` that is shown back to the author.
  */
 export async function moderateIdea(
@@ -163,7 +165,7 @@ export async function moderateIdea(
   }
 
   await updateDoc(doc(firestore, "ideas", ideaId), {
-    status: action === "request_changes" ? "changes_requested" : "rejected",
+    status: "changes_requested",
     moderationFeedback: {
       message,
       by: moderatorId,
@@ -177,13 +179,14 @@ export async function moderateIdea(
  * `supportCount` on the idea so the home feed needs no per-idea reads. */
 export async function supportIdea(
   ideaId: string,
-  leader: { uid: string; displayName: string },
+  leader: { uid: string; displayName: string; title?: string },
   firestore: Firestore = db(),
 ): Promise<void> {
   await setDoc(doc(firestore, "supports", `${ideaId}_${leader.uid}`), {
     ideaId,
     leaderId: leader.uid,
     leaderName: leader.displayName,
+    leaderTitle: leader.title ?? null,
     createdAt: serverTimestamp(),
   });
   await updateDoc(doc(firestore, "ideas", ideaId), {
@@ -250,6 +253,7 @@ function ideaFromSnapshot(snap: {
     status: (d.status as IdeaStatus) ?? "pending",
     authorId: String(d.authorId ?? ""),
     authorName: String(d.authorName ?? ""),
+    authorTitle: d.authorTitle ? String(d.authorTitle) : undefined,
     upvoteUserIds: Array.isArray(d.upvoteUserIds) ? (d.upvoteUserIds as string[]) : [],
     upvoteCount: Number(d.upvoteCount ?? 0),
     supportCount: Number(d.supportCount ?? 0),
@@ -270,14 +274,15 @@ export async function getIdea(
   return snap.exists() ? ideaFromSnapshot(snap) : null;
 }
 
-/** The home feed — only approved ideas, newest first. */
+/** The home feed — only approved ideas, sorted by newest or most upvotes. */
 export async function getApprovedIdeas(
+  sort: "new" | "upvotes" = "new",
   firestore: Firestore = db(),
 ): Promise<Idea[]> {
   const q = query(
     collection(firestore, "ideas"),
     where("status", "==", "approved"),
-    orderBy("createdAt", "desc"),
+    orderBy(sort === "upvotes" ? "upvoteCount" : "createdAt", "desc"),
   );
   const snap = await getDocs(q);
   return snap.docs.map(ideaFromSnapshot);
@@ -297,6 +302,20 @@ export async function getIdeasByAuthor(
   return snap.docs.map(ideaFromSnapshot);
 }
 
+/** Count of ideas sent back to the given author (for notification dot). */
+export async function getChangesRequestedCount(
+  authorId: string,
+  firestore: Firestore = db(),
+): Promise<number> {
+  const q = query(
+    collection(firestore, "ideas"),
+    where("authorId", "==", authorId),
+    where("status", "==", "changes_requested"),
+  );
+  const snap = await getDocs(q);
+  return snap.size;
+}
+
 /** All ideas still awaiting moderation — used by /moderation. */
 export async function getPendingIdeas(
   firestore: Firestore = db(),
@@ -305,6 +324,18 @@ export async function getPendingIdeas(
     collection(firestore, "ideas"),
     where("status", "==", "pending"),
     orderBy("createdAt", "asc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(ideaFromSnapshot);
+}
+
+/** All ideas that have been moderated (have feedback) — used by leaderboard. */
+export async function getModeratedIdeas(
+  firestore: Firestore = db(),
+): Promise<Idea[]> {
+  const q = query(
+    collection(firestore, "ideas"),
+    where("moderationFeedback", "!=", null),
   );
   const snap = await getDocs(q);
   return snap.docs.map(ideaFromSnapshot);
@@ -324,6 +355,7 @@ export async function getIdeaSupports(
     ideaId: String(s.data().ideaId ?? ""),
     leaderId: String(s.data().leaderId ?? ""),
     leaderName: String(s.data().leaderName ?? ""),
+    leaderTitle: s.data().leaderTitle ? String(s.data().leaderTitle) : undefined,
     createdAt: (s.data().createdAt as SupportDoc["createdAt"]) ?? null,
   }));
 }
@@ -393,6 +425,31 @@ export async function setUserRole(
   firestore: Firestore = db(),
 ): Promise<void> {
   await updateDoc(doc(firestore, "users", uid), { role });
+}
+
+/** Update a user's leader title (e.g. "Digital Leader", "Head Girl"). */
+export async function updateUserTitle(
+  uid: string,
+  title: string,
+  firestore: Firestore = db(),
+): Promise<void> {
+  await updateDoc(doc(firestore, "users", uid), { title });
+}
+
+/** Update an idea (for resubmission after changes_requested). */
+export async function updateIdea(
+  ideaId: string,
+  input: { title: string; description: string; showAuthorName: boolean },
+  firestore: Firestore = db(),
+): Promise<void> {
+  await updateDoc(doc(firestore, "ideas", ideaId), {
+    title: input.title,
+    description: input.description,
+    showAuthorName: input.showAuthorName,
+    status: "pending",
+    moderationFeedback: null,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export type { Firestore };

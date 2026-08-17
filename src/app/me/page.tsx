@@ -8,13 +8,14 @@ import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { IdeaModal } from "@/components/IdeaModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { getIdeasByAuthor, getLeaderSupports, getIdea, deleteIdea } from "@/lib/api";
+import { EditIdeaDialog } from "@/components/EditIdeaDialog";
+import { getIdeasByAuthor, getLeaderSupports, getIdea, deleteIdea, updateUserTitle } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
 
 export default function MePage() {
-  const { user, isLeader } = useAuth();
+  const { user, isLeader, refreshUser } = useAuth();
   const [myIdeas, setMyIdeas] = useState<Idea[]>([]);
   const [supported, setSupported] = useState<Idea[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -23,6 +24,10 @@ export default function MePage() {
   const [deleteError, setDeleteError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+  const [title, setTitle] = useState(user?.title ?? "");
+  const [titleBusy, setTitleBusy] = useState(false);
+  const [titleNotice, setTitleNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
@@ -59,6 +64,8 @@ export default function MePage() {
     supported.find((i) => i.id === selectedId) ??
     null;
 
+  const editingIdea = editingId ? myIdeas.find((i) => i.id === editingId) ?? null : null;
+
   async function handleDelete(ideaId: string) {
     if (!user) return;
     setDeleteBusy(true);
@@ -75,12 +82,60 @@ export default function MePage() {
     }
   }
 
+  async function handleSaveTitle() {
+    if (!user || titleBusy) return;
+    setTitleBusy(true);
+    setTitleNotice(null);
+    try {
+      await updateUserTitle(user.uid, title.trim());
+      await refreshUser();
+      setTitleNotice({ kind: "ok", text: strings.me.titleSaved });
+    } catch {
+      setTitleNotice({ kind: "error", text: strings.me.titleError });
+    } finally {
+      setTitleBusy(false);
+    }
+  }
+
   return (
     <ProtectedRoute>
       <Navbar />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
         <h1 className="text-2xl font-extrabold text-ink">{strings.me.heading}</h1>
         <p className="mt-1 text-muted">{user?.displayName}</p>
+
+        {/* Leader title input */}
+        {isLeader && (
+          <div className="mt-4 max-w-sm">
+            <label className="block">
+              <span className="text-sm font-semibold">{strings.me.title}</span>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={strings.me.titlePlaceholder}
+                className="mt-1 w-full rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none focus:border-kakao"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={handleSaveTitle}
+              disabled={titleBusy || title.trim() === (user?.title ?? "")}
+              className="mt-2 rounded-full bg-kakao px-4 py-1.5 text-sm font-bold text-ink transition hover:brightness-95 disabled:opacity-50"
+            >
+              {titleBusy ? strings.common.loading : strings.common.save}
+            </button>
+            {titleNotice && (
+              <p
+                role="alert"
+                className={`mt-2 text-xs font-semibold ${
+                  titleNotice.kind === "ok" ? "text-success" : "text-danger"
+                }`}
+              >
+                {titleNotice.text}
+              </p>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <p className="mt-8 text-muted">{strings.common.loading}</p>
@@ -113,16 +168,27 @@ export default function MePage() {
                           {idea.status === "rejected" && strings.idea.statusRejected}
                         </p>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDeleteError(false);
-                          setDeletingId(idea.id);
-                        }}
-                        className="shrink-0 rounded-full border border-danger/40 px-3 py-1.5 text-xs font-bold text-danger transition hover:bg-danger hover:text-white"
-                      >
-                        {strings.idea.delete}
-                      </button>
+                      <div className="flex shrink-0 gap-2">
+                        {idea.status === "changes_requested" && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingId(idea.id)}
+                            className="rounded-full border border-kakao px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-kakao-soft"
+                          >
+                            {strings.me.editResubmit}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError(false);
+                            setDeletingId(idea.id);
+                          }}
+                          className="rounded-full border border-danger/40 px-3 py-1.5 text-xs font-bold text-danger transition hover:bg-danger hover:text-white"
+                        >
+                          {strings.idea.delete}
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -161,6 +227,17 @@ export default function MePage() {
 
       {selected && (
         <IdeaModal idea={selected} onClose={() => setSelectedId(null)} onMutated={refresh} />
+      )}
+
+      {editingIdea && (
+        <EditIdeaDialog
+          idea={editingIdea}
+          onClose={() => setEditingId(null)}
+          onSaved={() => {
+            setEditingId(null);
+            refresh();
+          }}
+        />
       )}
 
       {deletingId && (

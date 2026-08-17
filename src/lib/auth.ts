@@ -57,6 +57,8 @@ export interface AuthUser {
   /** See UserDoc.displayNameSet — true once a display name was set. */
   displayNameSet: boolean;
   role: Role;
+  /** Optional leader title (e.g. "Digital Leader", "Head Girl"). */
+  title?: string;
 }
 
 /** True when a string looks like an email address. Used to detect legacy user
@@ -77,6 +79,7 @@ export async function loadUserDoc(user: User): Promise<AuthUser> {
       displayName?: string;
       displayNameSet?: boolean;
       role?: Role;
+      title?: string;
     };
     const storedName = data.displayName || "";
     const providerName = user.displayName || "";
@@ -91,6 +94,7 @@ export async function loadUserDoc(user: User): Promise<AuthUser> {
       displayName: displayNameSet ? storedName || providerName || "" : "",
       displayNameSet,
       role: data.role ?? DEFAULT_ROLE,
+      title: data.title,
     };
   }
   // No doc yet — treat as a brand-new student account. displayNameSet only
