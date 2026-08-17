@@ -107,6 +107,7 @@ export default function IdeasPage() {
                 key={idea.id}
                 idea={idea}
                 supportCount={idea.supportCount}
+                currentUserId={user?.uid}
                 onOpen={() => setSelectedId(idea.id)}
                 onUpvote={() => toggleUpvote(idea)}
               />

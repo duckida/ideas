@@ -1,8 +1,7 @@
 "use client";
 
-// IdeaModal — the popup opened from an IdeaCard. Overview tab shows the full
-// description + upvote/support actions; Timeline tab shows the leader updates
-// embedded in the idea doc (and lets a supporting leader post new ones).
+// IdeaModal — the popup opened from an IdeaCard. Shows the full idea with
+// upvote/support actions and the leader timeline below a divider.
 
 import { useState, type FormEvent, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -27,18 +26,13 @@ interface IdeaModalProps {
 export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalProps) {
   const { user, isLeader } = useAuth();
   const [idea, setIdea] = useState<Idea>(initialIdea);
-  const [tab, setTab] = useState<"overview" | "timeline">("overview");
   const [supports, setSupports] = useState<Array<{ leaderId: string; leaderName: string }>>([]);
   const [busy, setBusy] = useState(false);
   const [post, setPost] = useState("");
-  // Bumped after a mutation so the modal re-syncs from the server without
-  // depending on the parent's (stable) `onMutated` callback in the effect.
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let active = true;
-    // Keep the modal fresh: reload the idea + its supports on open and after
-    // any local mutation (timeline posts etc.).
     Promise.all([getIdea(initialIdea.id), getIdeaSupports(initialIdea.id)])
       .then(([fresh, sup]) => {
         if (!active) return;
@@ -119,146 +113,118 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
       onClick={onClose}
     >
       <div
-        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[1.25rem] bg-surface shadow-xl"
+        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[1.25rem] border border-line bg-surface p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-line px-6 py-4">
-          <div>
-            <h2 className="text-xl font-extrabold leading-snug text-ink">{idea.title}</h2>
-            <p className="mt-1 text-sm text-muted">
-              {idea.showAuthorName
-                ? t(strings.idea.author, { name: idea.authorName })
-                : strings.idea.anonymous}
-            </p>
-          </div>
+        {/* Header: title + upvote */}
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-xl font-extrabold leading-snug text-ink">{idea.title}</h2>
           <button
             type="button"
-            onClick={onClose}
-            aria-label={strings.modal.close}
-            className="rounded-full p-2 text-muted transition hover:bg-background hover:text-foreground"
+            onClick={toggleUpvote}
+            disabled={busy || !uid}
+            className={`shrink-0 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-bold transition disabled:opacity-50 ${
+              hasUpvoted
+                ? "border-kakao bg-kakao text-ink"
+                : "border-line text-ink hover:bg-kakao-soft"
+            }`}
           >
-            ✕
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 2L10 8H2L6 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {idea.upvoteCount} upvotes
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-line px-6 pt-2">
-          {(
-            [
-              ["overview", strings.modal.overviewTab],
-              ["timeline", strings.modal.timelineTab],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              className={`rounded-t-xl px-4 py-2 text-sm font-bold transition ${
-                tab === key
-                  ? "border-b-2 border-kakao text-ink"
-                  : "text-muted hover:text-foreground"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {tab === "overview" ? (
-            <div className="space-y-4">
-              <p className="whitespace-pre-wrap leading-relaxed text-foreground">
-                {idea.description}
-              </p>
-
-              {supports.length > 0 && (
-                <div>
-                  <p className="text-sm font-bold text-ink">
-                    {strings.ideasHome.supportedByLeaders}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {supports.map((s) => (
-                      <span
-                        key={s.leaderId}
-                        className="rounded-full bg-kakao px-3 py-1 text-xs font-bold text-ink"
-                      >
-                        {s.leaderName}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={toggleUpvote}
-                  disabled={busy || !uid}
-                  className={`rounded-full px-4 py-2 text-sm font-bold transition disabled:opacity-50 ${
-                    hasUpvoted
-                      ? "bg-ink text-white"
-                      : "bg-kakao-soft text-ink hover:bg-kakao"
-                  }`}
-                >
-                  {hasUpvoted ? "▲" : "△"} {strings.idea.upvote} · {idea.upvoteCount}
-                </button>
-
-                {isLeader && (
-                  <button
-                    type="button"
-                    onClick={toggleSupport}
-                    disabled={busy || !uid}
-                    className={`rounded-full px-4 py-2 text-sm font-bold transition disabled:opacity-50 ${
-                      mySupport
-                        ? "bg-success text-white"
-                        : "border border-kakao text-ink hover:bg-kakao-soft"
-                    }`}
-                  >
-                    {mySupport ? strings.idea.supported : strings.idea.support}
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {canPostTimeline && (
-                <form onSubmit={handlePost} className="flex gap-2">
-                  <input
-                    value={post}
-                    onChange={(e) => setPost(e.target.value)}
-                    placeholder={strings.timeline.postPlaceholder}
-                    aria-label={strings.timeline.postLabel}
-                    className="flex-1 rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none focus:border-kakao"
-                  />
-                  <button
-                    type="submit"
-                    disabled={busy || !post.trim()}
-                    className="shrink-0 rounded-full bg-kakao px-4 py-2 text-sm font-bold text-ink transition hover:brightness-95 disabled:opacity-50"
-                  >
-                    {strings.timeline.postButton}
-                  </button>
-                </form>
-              )}
-
-              {sortedTimeline.length === 0 ? (
-                <p className="text-sm text-muted">{strings.modal.noTimeline}</p>
-              ) : (
-                <ul className="space-y-3">
-                  {sortedTimeline.map((entry) => (
-                    <li key={entry.id} className="rounded-xl bg-background p-3">
-                      <p className="text-sm leading-relaxed text-foreground">{entry.message}</p>
-                      <p className="mt-1 text-xs font-semibold text-muted">
-                        {t(strings.timeline.byLeader, { name: entry.leaderName })}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+        {/* Author + support */}
+        <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted">
+          <span>
+            {idea.showAuthorName
+              ? `by ${idea.authorName}`
+              : strings.idea.anonymous}
+          </span>
+          {supports.length > 0 && (
+            <span>Supported by {supports.map((s) => s.leaderName).join(", ")}</span>
           )}
         </div>
+
+        {/* Description */}
+        <p className="mt-4 whitespace-pre-wrap leading-relaxed text-foreground">
+          {idea.description}
+        </p>
+
+        {/* Divider */}
+        <hr className="my-6 border-line" />
+
+        {/* Timeline */}
+        <div className="flex-1 overflow-y-auto">
+          <h3 className="text-base font-bold text-ink">Timeline</h3>
+
+          {canPostTimeline && (
+            <form onSubmit={handlePost} className="mt-3 flex gap-2">
+              <input
+                value={post}
+                onChange={(e) => setPost(e.target.value)}
+                placeholder={strings.timeline.postPlaceholder}
+                aria-label={strings.timeline.postLabel}
+                className="flex-1 rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none focus:border-kakao"
+              />
+              <button
+                type="submit"
+                disabled={busy || !post.trim()}
+                className="shrink-0 rounded-full bg-kakao px-4 py-2 text-sm font-bold text-ink transition hover:brightness-95 disabled:opacity-50"
+              >
+                {strings.timeline.postButton}
+              </button>
+            </form>
+          )}
+
+          {sortedTimeline.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">{strings.modal.noTimeline}</p>
+          ) : (
+            <ul className="mt-3 space-y-4">
+              {sortedTimeline.map((entry) => {
+                const date = entry.createdAt?.toDate();
+                const dateStr = date
+                  ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                  : "";
+                return (
+                  <li key={entry.id}>
+                    <p className="text-sm leading-relaxed text-foreground">
+                      {dateStr}: - {entry.message}
+                    </p>
+                    <p className="text-xs text-muted">{entry.leaderName}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Leader support button */}
+        {isLeader && (
+          <button
+            type="button"
+            onClick={toggleSupport}
+            disabled={busy || !uid}
+            className={`mt-4 w-full rounded-full px-4 py-2 text-sm font-bold transition disabled:opacity-50 ${
+              mySupport
+                ? "bg-success text-white"
+                : "border border-kakao text-ink hover:bg-kakao-soft"
+            }`}
+          >
+            {mySupport ? strings.idea.supported : strings.idea.support}
+          </button>
+        )}
+
+        {/* Close */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-2 w-full rounded-full border border-line px-4 py-2 text-sm font-bold text-muted transition hover:bg-background"
+        >
+          {strings.modal.close}
+        </button>
       </div>
     </div>
   );

@@ -9,12 +9,14 @@ interface IdeaCardProps {
   idea: Idea;
   /** Number of distinct leaders supporting this idea. */
   supportCount: number;
+  currentUserId?: string;
   onOpen: () => void;
   onUpvote: () => void;
 }
 
-export function IdeaCard({ idea, supportCount, onOpen, onUpvote }: IdeaCardProps) {
+export function IdeaCard({ idea, supportCount, currentUserId, onOpen, onUpvote }: IdeaCardProps) {
   const hasSupport = supportCount > 0;
+  const hasUpvoted = currentUserId !== undefined && idea.upvoteUserIds.includes(currentUserId);
 
   return (
     <div
@@ -45,7 +47,11 @@ export function IdeaCard({ idea, supportCount, onOpen, onUpvote }: IdeaCardProps
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onUpvote(); }}
-          className="shrink-0 flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs font-bold text-ink transition hover:bg-kakao-soft"
+          className={`shrink-0 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold transition ${
+            hasUpvoted
+              ? "border-kakao bg-kakao text-ink"
+              : "border-line text-ink hover:bg-kakao-soft"
+          }`}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M6 2L10 8H2L6 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
