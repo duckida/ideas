@@ -15,6 +15,7 @@ const pending: Idea = {
   upvoteUserIds: [],
   upvoteCount: 0,
   supportCount: 0,
+  showAuthorName: true,
   moderationFeedback: null,
   timeline: [],
   createdAt: null,
@@ -43,6 +44,11 @@ describe("ModerationItem", () => {
     expect(screen.getByRole("heading", { name: "Solar benches" })).toBeInTheDocument();
     expect(screen.getByText(/Charge your phone in the sun/)).toBeInTheDocument();
     expect(screen.getByText("Ada")).toBeInTheDocument();
+  });
+
+  it("shows the real author to moderators even when anonymous", () => {
+    render(<ModerationItem idea={{ ...pending, showAuthorName: false }} onDone={vi.fn()} />);
+    expect(screen.getByText("Ada (Anonymous)")).toBeInTheDocument();
   });
 
   it("approves immediately without a message", async () => {

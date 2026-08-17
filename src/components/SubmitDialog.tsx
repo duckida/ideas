@@ -18,22 +18,28 @@ export function SubmitDialog({
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [showAuthorName, setShowAuthorName] = useState(true);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<"idle" | "submitted">("idle");
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!user || !title.trim() || !description.trim() || busy) return;
     setBusy(true);
+    setError(null);
     try {
       await createIdea({
         title: title.trim(),
         description: description.trim(),
         authorId: user.uid,
         authorName: user.displayName,
+        showAuthorName,
       });
       setStatus("submitted");
       onSubmitted();
+    } catch {
+      setError(strings.fab.submitError);
     } finally {
       setBusy(false);
     }
@@ -83,6 +89,26 @@ export function SubmitDialog({
                   className="mt-1 w-full rounded-xl border border-line bg-background px-3 py-2 outline-none focus:border-kakao"
                 />
               </label>
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={showAuthorName}
+                  onChange={(e) => setShowAuthorName(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-line accent-kakao"
+                />
+                <span className="text-sm text-muted">
+                  <span className="font-semibold text-ink">{strings.fab.revealName}</span>
+                  <br />
+                  {strings.fab.revealNameHint}
+                </span>
+              </label>
+
+              {error && (
+                <p className="text-sm font-medium text-danger" role="alert">
+                  {error}
+                </p>
+              )}
+
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"

@@ -87,7 +87,7 @@ describe("createIdea (rate-limited)", () => {
     );
 
     const id = await createIdea(
-      { title: "Solar benches", description: "Charge your phone in the sun", authorId: "u1", authorName: "Ada" },
+      { title: "Solar benches", description: "Charge your phone in the sun", authorId: "u1", authorName: "Ada", showAuthorName: true },
       db,
     );
 
@@ -105,6 +105,7 @@ describe("createIdea (rate-limited)", () => {
       description: "Charge your phone in the sun",
       authorId: "u1",
       authorName: "Ada",
+      showAuthorName: true,
       status: "pending",
       upvoteUserIds: [],
       upvoteCount: 0,
@@ -133,7 +134,7 @@ describe("createIdea (rate-limited)", () => {
     );
 
     await expect(
-      createIdea({ title: "T2", description: "d", authorId: "u1", authorName: "Ada" }, db),
+      createIdea({ title: "T2", description: "d", authorId: "u1", authorName: "Ada", showAuthorName: true }, db),
     ).rejects.toThrow("ideas_rate_limited");
     expect(tx.set).not.toHaveBeenCalled();
   });
@@ -150,7 +151,7 @@ describe("createIdea (rate-limited)", () => {
     );
 
     await expect(
-      createIdea({ title: "T3", description: "d", authorId: "u1", authorName: "Ada" }, db),
+      createIdea({ title: "T3", description: "d", authorId: "u1", authorName: "Ada", showAuthorName: true }, db),
     ).resolves.toBeTruthy();
   });
 
@@ -159,7 +160,7 @@ describe("createIdea (rate-limited)", () => {
     firestoreModule.getDocs.mockResolvedValue(querySnap(5));
 
     await expect(
-      createIdea({ title: "T4", description: "d", authorId: "u1", authorName: "Ada" }, db),
+      createIdea({ title: "T4", description: "d", authorId: "u1", authorName: "Ada", showAuthorName: true }, db),
     ).rejects.toThrow("ideas_limit_reached");
     expect(firestoreModule.runTransaction).not.toHaveBeenCalled();
   });
@@ -172,7 +173,7 @@ describe("createIdea (rate-limited)", () => {
     );
 
     await expect(
-      createIdea({ title: "T5", description: "d", authorId: "nobody", authorName: "Ghost" }, db),
+      createIdea({ title: "T5", description: "d", authorId: "nobody", authorName: "Ghost", showAuthorName: true }, db),
     ).rejects.toThrow("user_not_found");
     expect(tx.set).not.toHaveBeenCalled();
   });

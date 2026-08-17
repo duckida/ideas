@@ -127,7 +127,9 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
           <div>
             <h2 className="text-xl font-extrabold leading-snug text-ink">{idea.title}</h2>
             <p className="mt-1 text-sm text-muted">
-              {t(strings.idea.author, { name: idea.authorName })}
+              {idea.showAuthorName
+                ? t(strings.idea.author, { name: idea.authorName })
+                : strings.idea.anonymous}
             </p>
           </div>
           <button

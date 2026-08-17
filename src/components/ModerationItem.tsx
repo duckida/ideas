@@ -44,7 +44,9 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
         {idea.description}
       </p>
       <p className="mt-2 text-xs font-semibold text-muted">
-        {idea.authorName}
+        {idea.showAuthorName
+          ? idea.authorName
+          : `${idea.authorName} (${strings.idea.anonymous})`}
       </p>
 
       {mode === "idle" ? (

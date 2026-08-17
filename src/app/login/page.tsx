@@ -3,7 +3,7 @@
 // Login page — school Microsoft account (popup) or email/password fallback.
 // All copy comes from strings.ts.
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithMicrosoft, signInWithEmail } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
@@ -17,11 +17,14 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"microsoft" | "email" | null>(null);
 
-  if (user) {
-    // Already signed in — bounce to the home page.
-    router.replace("/ideas");
-    return null;
-  }
+  // Redirect away from /login when already signed in. Using useEffect avoids
+  // the "Cannot update a component (Router) while rendering another component"
+  // React warning that firing router.replace during render triggers.
+  useEffect(() => {
+    if (user) router.replace("/ideas");
+  }, [user, router]);
+
+  if (user) return null;
 
   async function handleMicrosoft() {
     setBusy("microsoft");

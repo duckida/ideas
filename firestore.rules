@@ -91,9 +91,10 @@ service cloud.firestore {
         && request.resource.data.upvoteUserIds.size() == 0
         && request.resource.data.upvoteCount == 0
         && request.resource.data.supportCount == 0
+        && request.resource.data.showAuthorName is bool
         && request.resource.data.keys().hasOnly([
             'title', 'description', 'status', 'authorId', 'authorName',
-            'upvoteUserIds', 'upvoteCount', 'supportCount',
+            'upvoteUserIds', 'upvoteCount', 'supportCount', 'showAuthorName',
             'moderationFeedback', 'timeline', 'createdAt', 'updatedAt',
           ])
         // Rate window: at most one idea submitted every N seconds.

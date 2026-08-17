@@ -15,6 +15,7 @@ const idea: Idea = {
   upvoteUserIds: [],
   upvoteCount: 3,
   supportCount: 0,
+  showAuthorName: true,
   moderationFeedback: null,
   timeline: [],
   createdAt: null,
@@ -36,6 +37,12 @@ describe("IdeaCard", () => {
   it("shows the supported-by-leaders badge when leaders back it", () => {
     render(<IdeaCard idea={{ ...idea, id: "i1" }} supportCount={2} onOpen={vi.fn()} />);
     expect(screen.getByText("Supported by leaders")).toBeInTheDocument();
+  });
+
+  it("hides the author when showAuthorName is false", () => {
+    render(<IdeaCard idea={{ ...idea, id: "i1", showAuthorName: false }} supportCount={0} onOpen={vi.fn()} />);
+    expect(screen.getByText("Anonymous")).toBeInTheDocument();
+    expect(screen.queryByText(/Ada/)).not.toBeInTheDocument();
   });
 
   it("does not show the badge without support", () => {

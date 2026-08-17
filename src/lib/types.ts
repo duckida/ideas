@@ -39,6 +39,8 @@ export interface Idea {
   /** Denormalized leader-support count; maintained next to the supports
    * collection so the home feed can render badges without N+1 reads. */
   supportCount: number;
+  /** When false the author's name is hidden in public views. */
+  showAuthorName: boolean;
   moderationFeedback: ModerationFeedback | null;
   timeline: TimelineEntry[];
   createdAt: Timestamp | null;

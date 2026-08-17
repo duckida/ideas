@@ -15,6 +15,7 @@ const idea: Idea = {
   upvoteUserIds: [],
   upvoteCount: 2,
   supportCount: 0,
+  showAuthorName: true,
   moderationFeedback: null,
   timeline: [],
   createdAt: null,
@@ -50,6 +51,12 @@ describe("IdeaModal", () => {
     expect(await screen.findByText(/Charge your phone in the sun/)).toBeInTheDocument();
     expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Timeline")).toBeInTheDocument();
+  });
+
+  it("shows Anonymous instead of the author when the idea is anonymous", async () => {
+    render(<IdeaModal idea={{ ...idea, showAuthorName: false }} onClose={vi.fn()} onMutated={vi.fn()} />);
+    expect(await screen.findByText("Anonymous")).toBeInTheDocument();
+    expect(screen.queryByText(/by Ada/)).not.toBeInTheDocument();
   });
 
   it("lets a student upvote and calls setUpvote", async () => {

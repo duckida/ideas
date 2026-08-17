@@ -50,6 +50,7 @@ export interface NewIdeaInput {
   description: string;
   authorId: string;
   authorName: string;
+  showAuthorName: boolean;
 }
 
 export interface IdeaLimits {
@@ -112,6 +113,7 @@ export async function createIdea(
       status: "pending",
       authorId: input.authorId,
       authorName: input.authorName,
+      showAuthorName: input.showAuthorName,
       upvoteUserIds: [],
       upvoteCount: 0,
       supportCount: 0,
@@ -251,6 +253,7 @@ function ideaFromSnapshot(snap: {
     upvoteUserIds: Array.isArray(d.upvoteUserIds) ? (d.upvoteUserIds as string[]) : [],
     upvoteCount: Number(d.upvoteCount ?? 0),
     supportCount: Number(d.supportCount ?? 0),
+    showAuthorName: d.showAuthorName !== false,
     moderationFeedback: (d.moderationFeedback as Idea["moderationFeedback"]) ?? null,
     timeline: Array.isArray(d.timeline) ? (d.timeline as Idea["timeline"]) : [],
     createdAt: (d.createdAt as Idea["createdAt"]) ?? null,

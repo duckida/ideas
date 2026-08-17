@@ -34,7 +34,9 @@ export function IdeaCard({ idea, supportCount, onOpen }: IdeaCardProps) {
 
       <div className="mt-auto flex items-center justify-between gap-3">
         <span className="text-xs font-medium text-muted">
-          {t(strings.idea.author, { name: idea.authorName })}
+          {idea.showAuthorName
+            ? t(strings.idea.author, { name: idea.authorName })
+            : strings.idea.anonymous}
         </span>
         {hasSupport && (
           <span className="rounded-full bg-kakao px-2.5 py-1 text-xs font-bold text-ink">
