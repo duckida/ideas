@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NameSetup } from "@/components/NameSetup";
 import { setAuthUser } from "@/test/authMock";
+import { strings } from "@/lib/strings";
 
 const authApi = vi.hoisted(() => ({
   setUserDisplayName: vi.fn(async () => {}),
@@ -27,7 +28,7 @@ beforeEach(() => {
 describe("NameSetup", () => {
   it("asks for a name and keeps the submit disabled until one is typed", () => {
     render(<NameSetup />);
-    expect(screen.getByRole("heading", { name: "What should we call you?" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: strings.auth.nameSetupTitle })).toBeInTheDocument();
 
     const submit = screen.getByRole("button", { name: "Save name" }) as HTMLButtonElement;
     expect(submit.disabled).toBe(true);
@@ -59,6 +60,6 @@ describe("NameSetup", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Couldn't save your name. Please try again.",
     );
-    expect(screen.getByRole("heading", { name: "What should we call you?" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: strings.auth.nameSetupTitle })).toBeInTheDocument();
   });
 });

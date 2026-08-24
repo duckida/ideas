@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { strings } from "@/lib/strings";
 
 // The commit values are inlined at build time; control them via the env in
 // each test and re-import the module so its module-level constants refresh.
@@ -32,10 +33,10 @@ describe("SettingsModal", () => {
     expect(dialog.firstElementChild).toHaveClass("text-center");
 
     expect(screen.getByText(/place where students share ideas/)).toBeInTheDocument();
-    expect(screen.getByText("Made by Nishant Tandon.")).toBeInTheDocument();
+    expect(screen.getByText(strings.settings.aboutMadeBy)).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "n.tandon@whatever.com" }),
-    ).toHaveAttribute("href", "mailto:n.tandon@whatever.com");
+      screen.getByRole("link", { name: strings.settings.supportEmail }),
+    ).toHaveAttribute("href", `mailto:${strings.settings.supportEmail}`);
     expect(screen.getByRole("radio", { name: "Dark" })).toBeInTheDocument();
   });
 

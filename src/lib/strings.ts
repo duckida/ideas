@@ -8,7 +8,6 @@ export const strings = {
   brand: {
     name: "Ideas",
     tagline: "Where school ideas grow",
-    nameKakao: "Ideas",
   },
 
   nav: {
@@ -22,12 +21,10 @@ export const strings = {
 
   settings: {
     heading: "Settings",
-    appearance: "Appearance",
     themeLabel: "Theme",
     themeLight: "Light",
     themeDark: "Dark",
     themeSystem: "Auto",
-    aboutHeading: "About",
     aboutApp:
       "{brand} is a place where students share ideas for school life. Leaders review and support the best ones, and every idea gets a timeline so progress is easy to follow.",
     aboutMadeBy: "A project by Nirvaan and the Leadership team, created with AI.",
@@ -59,7 +56,6 @@ export const strings = {
   ideasHome: {
     heading: "Ideas",
     empty: "No ideas yet. Be the first to share one!",
-    supportedByLeaders: "Supported by leaders",
     sortNew: "New",
     sortUpvotes: "Upvotes",
     search: "Search",
@@ -95,23 +91,19 @@ export const strings = {
     descriptionLabel: "Description",
     editSubmit: "Save & re-submit",
     editCancel: "Cancel",
-    editSuccess: "Idea re-submitted for review.",
     editError: "Couldn't save changes. Please try again.",
   },
 
   modal: {
-    overviewTab: "Overview",
-    timelineTab: "Timeline",
     close: "Close",
     noTimeline: "No updates yet.",
   },
 
   timeline: {
+    heading: "Timeline",
     postPlaceholder: "Share your progress towards this idea",
     postButton: "Post update",
     postLabel: "Timeline update",
-    empty: "No updates yet!",
-    byLeader: "{name} · leader",
   },
 
   fab: {
@@ -132,13 +124,9 @@ export const strings = {
     empty: "Nothing to review yet :D",
     approve: "Approve",
     requestChanges: "Request changes",
-    reject: "Reject",
     feedbackLabel: "Message (shown to the creator)",
     feedbackPlaceholder: "Tell the creator what to change…",
     requestChangesConfirm: "Send changes request",
-    rejectConfirm: "Reject idea",
-    submittedBy: "Submitted by {name}",
-    close: "Close",
   },
 
   me: {
@@ -147,18 +135,15 @@ export const strings = {
     myIdeasEmpty: "You haven't shared any ideas yet.",
     supported: "Supported ideas",
     supportedEmpty: "You haven't supported any ideas yet.",
-    timelineHeading: "Timeline updates",
     title: "Your title",
     titlePlaceholder: "e.g. Learning Prefect, Deputy Head Girl",
     titleSaved: "Title saved",
     titleError: "Couldn't save title, please try again",
     editResubmit: "Edit & Resubmit",
-    resubmit: "Resubmit for review",
   },
 
   admin: {
     heading: "Admin",
-    addLeader: "Add leader",
     removeLeader: "Remove",
     removeInvite: "Cancel invite",
     emailLabel: "Leader email",
@@ -170,7 +155,6 @@ export const strings = {
     add: "Add",
     noLeaders: "No leaders yet.",
     noInvited: "No pending invitations.",
-    userNotFound: "No account found with that email",
     alreadyLeader: "That user is already a leader",
     removed: "Leader removed.",
     added: "Leader added.",
@@ -182,15 +166,12 @@ export const strings = {
   leaderboard: {
     heading: "Leaderboard",
     empty: "Nothing moderated yet!",
-    ideasModerated: "Ideas moderated",
     approved: "Approved",
     sentBack: "Sent back",
   },
 
   errors: {
     permission: "That area's off limits!",
-    notFound: "Not found",
-    generic: "Something went wrong D:",
     actionFailed: "That didn't save, please try again!",
     offline: "Couldn't reach the server, please check your connection and try again!",
     rulesDeploy: "The server rejected this save — the deployed Firestore security rules look out of date. Run: firebase deploy --only firestore:rules,firestore:indexes",
@@ -200,8 +181,6 @@ export const strings = {
     loading: "Loading…",
     cancel: "Cancel",
     save: "Save",
-    confirm: "Confirm",
-    logout: "Sign out",
     close: "Close",
   },
 } as const;

@@ -206,7 +206,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
 
         {/* Timeline */}
         <div className="flex-1 overflow-y-auto">
-          <h3 className="text-base font-bold text-ink">Timeline</h3>
+          <h3 className="text-base font-bold text-ink">{strings.timeline.heading}</h3>
 
           {canPostTimeline && (
             <form onSubmit={handlePost} className="mt-3 flex gap-2">
