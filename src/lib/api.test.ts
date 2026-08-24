@@ -42,6 +42,7 @@ vi.mock("@/lib/firebase", () => ({ getFirebaseApp: vi.fn(() => ({})) }));
 import {
   createIdea,
   deleteIdea,
+  getApprovedIdeas,
   moderateIdea,
   postTimelineUpdate,
   setUpvote,
@@ -176,6 +177,30 @@ describe("createIdea (rate-limited)", () => {
       createIdea({ title: "T5", description: "d", authorId: "nobody", authorName: "Ghost", showAuthorName: true }, db),
     ).rejects.toThrow("user_not_found");
     expect(tx.set).not.toHaveBeenCalled();
+  });
+});
+
+describe("getApprovedIdeas (home feed sort)", () => {
+  it("orders approved ideas by createdAt desc for the 'new' sort", async () => {
+    firestoreModule.getDocs.mockResolvedValue({ docs: [] });
+
+    await getApprovedIdeas("new", db);
+
+    expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
+    expect(firestoreModule.orderBy).toHaveBeenCalledWith("createdAt", "desc");
+    // Requires the composite index (status ASC, createdAt DESC).
+    expect(firestoreModule.getDocs).toHaveBeenCalledTimes(1);
+  });
+
+  it("orders approved ideas by upvoteCount desc for the 'upvotes' sort", async () => {
+    firestoreModule.getDocs.mockResolvedValue({ docs: [] });
+
+    await getApprovedIdeas("upvotes", db);
+
+    expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
+    // Requires the composite index (status ASC, upvoteCount DESC) — declared
+    // in firestore.indexes.json and guarded by src/lib/indexes.test.ts.
+    expect(firestoreModule.orderBy).toHaveBeenCalledWith("upvoteCount", "desc");
   });
 });
 

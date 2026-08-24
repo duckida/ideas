@@ -25,6 +25,14 @@
       ]
     },
     {
+      "collectionGroup": "ideas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "upvoteCount", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "supports",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
