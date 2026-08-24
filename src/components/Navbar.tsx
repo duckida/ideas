@@ -35,7 +35,9 @@ export function Navbar() {
       .then((count) => {
         if (active) setChangesCount(count);
       })
-      .catch(() => {});
+      .catch((err) =>
+        console.error("Navbar: failed to load changes-requested count", err),
+      );
     return () => {
       active = false;
     };

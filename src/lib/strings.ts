@@ -48,6 +48,7 @@ export const strings = {
     searchPlaceholder: "Search ideas…",
     noResults: "No ideas match your search.",
     loadError: "Couldn't load ideas.",
+    supportersError: "Couldn't load supporter names right now.",
     retry: "Try again",
   },
 
@@ -58,6 +59,8 @@ export const strings = {
     support: "Support",
     supported: "Supported",
     supportedBy: "Supported by {name}",
+    oneSupporter: "Supported by 1 leader",
+    supportedByCount: "Supported by {count} leaders",
     delete: "Delete",
     deleteConfirm: "Are you sure you want to delete this idea?",
     deleteConfirmDetail: "This can't be undone.",
@@ -171,6 +174,7 @@ export const strings = {
     permission: "You don't have permission to do that.",
     notFound: "Not found.",
     generic: "Something went wrong.",
+    actionFailed: "That didn't save. Please check your connection and try again.",
   },
 
   common: {

@@ -10,7 +10,7 @@ import { IdeaCard } from "@/components/IdeaCard";
 import { IdeaModal } from "@/components/IdeaModal";
 import { FabAdd } from "@/components/FabAdd";
 import { SubmitDialog } from "@/components/SubmitDialog";
-import { getApprovedIdeas, getIdeaSupports, setUpvote } from "@/lib/api";
+import { getApprovedIdeas, getSupportsForIdeas, setUpvote } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
 import type { Idea, SupportDoc } from "@/lib/types";
@@ -19,6 +19,7 @@ export default function IdeasPage() {
   const { user } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [supportsMap, setSupportsMap] = useState<Map<string, SupportDoc[]>>(new Map());
+  const [supportersError, setSupportersError] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSubmit, setShowSubmit] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -86,13 +87,17 @@ export default function IdeasPage() {
         if (!active) return;
         setLoadError(false);
         setIdeas(list);
-        const entries = await Promise.all(
-          list.map(async (idea) => {
-            const sups = await getIdeaSupports(idea.id);
-            return [idea.id, sups] as const;
-          }),
-        );
-        if (active) setSupportsMap(new Map(entries));
+        // Supporter names load separately from the feed itself: a failure here
+        // (e.g. a missing supports index or stale rules) must not blank the
+        // whole grid, and must be visible instead of silently swallowed.
+        setSupportersError(false);
+        try {
+          const map = await getSupportsForIdeas(list.map((i) => i.id));
+          if (active) setSupportsMap(map);
+        } catch (err) {
+          console.error("Failed to load supporter names", err);
+          if (active) setSupportersError(true);
+        }
       })
       .catch((err) => {
         // A failed feed (e.g. a missing Firestore index) must be visible — a
@@ -201,6 +206,11 @@ export default function IdeasPage() {
           </div>
         )}
 
+        {supportersError && (
+          <p role="alert" className="mt-4 text-xs font-semibold text-muted">
+            {strings.ideasHome.supportersError}
+          </p>
+        )}
         {loading ? (
           <p className="mt-8 text-muted">{strings.common.loading}</p>
         ) : loadError ? (

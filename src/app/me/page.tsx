@@ -50,7 +50,7 @@ export default function MePage() {
           setSupported([]);
         }
       })
-      .catch(() => {})
+      .catch((err) => console.error("Me: failed to load ideas/supports", err))
       .finally(() => {
         if (active) setLoading(false);
       });

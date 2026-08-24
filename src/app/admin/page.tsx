@@ -45,7 +45,7 @@ export default function AdminPage() {
           setInvited(invitedList);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("Admin: failed to load leaders", err));
     return () => {
       active = false;
     };

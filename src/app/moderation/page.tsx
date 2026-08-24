@@ -36,7 +36,7 @@ export default function ModerationPage() {
       .then((list) => {
         if (active) setIdeas(list);
       })
-      .catch(() => {})
+      .catch((err) => console.error("Moderation: failed to load queue", err))
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -71,7 +71,7 @@ export default function ModerationPage() {
         }
         setStats([...map.values()].sort((a, b) => b.total - a.total));
       })
-      .catch(() => {})
+      .catch((err) => console.error("Leaderboard: failed to load stats", err))
       .finally(() => {
         if (active) setStatsLoading(false);
       });

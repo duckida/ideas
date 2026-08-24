@@ -94,7 +94,7 @@ Document ID = normalised email (case-insensitive dedup).
 
 | page        | query                                            |
 | ----------- | ------------------------------------------------ |
-| `/ideas`    | `ideas` where `status == approved` order `createdAt desc`; plus `supports` per idea for the badge |
+| `/ideas`    | `ideas` where `status == approved` order `createdAt desc`; plus one batched `supports` read per ≤30 ideas (`ideaId in […]`) for the badge |
 | `/moderation` | `ideas` where `status == pending` order `createdAt asc` |
 | `/me`       | `ideas` where `authorId == me`; `supports` where `leaderId == me` → `getIdea` each |
 | `/admin`    | `users` where `role in [leader, admin]`; `getUserByEmail` for promoting |

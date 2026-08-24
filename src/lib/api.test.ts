@@ -43,6 +43,7 @@ import {
   createIdea,
   deleteIdea,
   getApprovedIdeas,
+  getSupportsForIdeas,
   moderateIdea,
   postTimelineUpdate,
   setUpvote,
@@ -291,6 +292,42 @@ describe("supportIdea / unsupportIdea", () => {
         updatedAt: { __type: "serverTimestamp" },
       }),
     );
+  });
+});
+
+describe("getSupportsForIdeas (batched supports read)", () => {
+  it("buckets returned support docs by ideaId and keeps empty entries", async () => {
+    firestoreModule.getDocs.mockResolvedValueOnce({
+      docs: [
+        { data: () => ({ ideaId: "i1", leaderId: "u9", leaderName: "Ms. Kim" }) },
+        { data: () => ({ ideaId: "i2", leaderId: "u8", leaderName: "Mr. Park", leaderTitle: "Head Girl" }) },
+      ],
+    });
+
+    const map = await getSupportsForIdeas(["i1", "i2", "i3"], db);
+
+    expect(map.get("i1")).toEqual([
+      { ideaId: "i1", leaderId: "u9", leaderName: "Ms. Kim", leaderTitle: undefined, createdAt: null },
+    ]);
+    expect(map.get("i2")).toEqual([
+      { ideaId: "i2", leaderId: "u8", leaderName: "Mr. Park", leaderTitle: "Head Girl", createdAt: null },
+    ]);
+    expect(map.get("i3")).toEqual([]); // no support docs → still an entry
+  });
+
+  it("chunks ids 30-at-a-time into separate 'in' queries", async () => {
+    firestoreModule.getDocs.mockResolvedValue({ docs: [] });
+    const ids = Array.from({ length: 65 }, (_, i) => `i${i}`);
+
+    const map = await getSupportsForIdeas(ids, db);
+
+    expect(firestoreModule.getDocs).toHaveBeenCalledTimes(3);
+    // Each chunk queried the supports collection group with an in-filter.
+    for (const call of firestoreModule.where.mock.calls) {
+      expect(call[0]).toBe("ideaId");
+      expect(call[1]).toBe("in");
+    }
+    expect(map.size).toBe(65);
   });
 });
 

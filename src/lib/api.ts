@@ -352,13 +352,50 @@ export async function getIdeaSupports(
     where("ideaId", "==", ideaId),
   );
   const snap = await getDocs(q);
-  return snap.docs.map((s) => ({
-    ideaId: String(s.data().ideaId ?? ""),
-    leaderId: String(s.data().leaderId ?? ""),
-    leaderName: String(s.data().leaderName ?? ""),
-    leaderTitle: s.data().leaderTitle ? String(s.data().leaderTitle) : undefined,
-    createdAt: (s.data().createdAt as SupportDoc["createdAt"]) ?? null,
-  }));
+  return snap.docs.map(supportFromSnapshot);
+}
+
+function supportFromSnapshot(s: {
+  data: () => Record<string, unknown>;
+}): SupportDoc {
+  const d = s.data();
+  return {
+    ideaId: String(d.ideaId ?? ""),
+    leaderId: String(d.leaderId ?? ""),
+    leaderName: String(d.leaderName ?? ""),
+    leaderTitle: d.leaderTitle ? String(d.leaderTitle) : undefined,
+    createdAt: (d.createdAt as SupportDoc["createdAt"]) ?? null,
+  };
+}
+
+/**
+ * Support docs for many ideas in one round-trip per chunk of 30 ids
+ * (Firestore caps `in` filters at 30 values), instead of one collection-group
+ * query per idea. Returns a map with an entry (possibly empty) per id.
+ */
+export async function getSupportsForIdeas(
+  ideaIds: string[],
+  firestore: Firestore = db(),
+): Promise<Map<string, SupportDoc[]>> {
+  const map = new Map<string, SupportDoc[]>(ideaIds.map((id) => [id, []]));
+  const chunks: string[][] = [];
+  for (let i = 0; i < ideaIds.length; i += 30) {
+    chunks.push(ideaIds.slice(i, i + 30));
+  }
+  await Promise.all(
+    chunks.map(async (ids) => {
+      const q = query(
+        collectionGroup(firestore, "supports"),
+        where("ideaId", "in", ids),
+      );
+      const snap = await getDocs(q);
+      for (const s of snap.docs) {
+        const support = supportFromSnapshot(s);
+        map.get(support.ideaId)?.push(support);
+      }
+    }),
+  );
+  return map;
 }
 
 /** Support docs for every idea one leader backs — used by /me. */

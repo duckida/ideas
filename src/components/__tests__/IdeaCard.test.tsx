@@ -62,6 +62,44 @@ describe("IdeaCard", () => {
   it("does not show support text without support", () => {
     render(<IdeaCard idea={{ ...idea, id: "i1" }} supports={noSupports} onOpen={vi.fn()} onUpvote={vi.fn()} />);
     expect(screen.queryByText(/Ms\. Kim/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Supported by/)).not.toBeInTheDocument();
+  });
+
+  it("falls back to the denormalized support count when names are missing", () => {
+    render(
+      <IdeaCard
+        idea={{ ...idea, id: "i1", supportCount: 2 }}
+        supports={noSupports}
+        onOpen={vi.fn()}
+        onUpvote={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Supported by 2 leaders")).toBeInTheDocument();
+  });
+
+  it("uses singular wording for a single supporter without names", () => {
+    render(
+      <IdeaCard
+        idea={{ ...idea, id: "i1", supportCount: 1 }}
+        supports={noSupports}
+        onOpen={vi.fn()}
+        onUpvote={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Supported by 1 leader")).toBeInTheDocument();
+  });
+
+  it("prefers supporter names over the count fallback", () => {
+    render(
+      <IdeaCard
+        idea={{ ...idea, id: "i1", supportCount: 2 }}
+        supports={[makeSupport("Ms. Kim")]}
+        onOpen={vi.fn()}
+        onUpvote={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Ms\. Kim/)).toBeInTheDocument();
+    expect(screen.queryByText(/Supported by 2 leaders/)).not.toBeInTheDocument();
   });
 
   it("calls onOpen when clicked", async () => {

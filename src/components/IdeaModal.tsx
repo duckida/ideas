@@ -29,6 +29,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   const [supports, setSupports] = useState<Array<{ leaderId: string; leaderName: string; leaderTitle?: string }>>([]);
   const [busy, setBusy] = useState(false);
   const [post, setPost] = useState("");
+  const [actionError, setActionError] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
@@ -39,7 +40,11 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
         if (fresh) setIdea(fresh);
         setSupports(sup);
       })
-      .catch(() => {});
+      .catch((err) => {
+        // Never swallow silently: a denied supports read (stale rules) or a
+        // missing collection-group index shows up here as "support vanished".
+        console.error("IdeaModal: failed to refresh idea/supports", err);
+      });
     return () => {
       active = false;
     };
@@ -52,6 +57,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   async function toggleUpvote() {
     if (!uid || busy) return;
     setBusy(true);
+    setActionError(false);
     try {
       await setUpvote(idea.id, uid, !hasUpvoted);
       setIdea((prev) => ({
@@ -63,6 +69,9 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
       }));
       setReloadTick((t) => t + 1);
       onMutated();
+    } catch (err) {
+      console.error("Failed to save upvote", err);
+      setActionError(true);
     } finally {
       setBusy(false);
     }
@@ -71,6 +80,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   async function toggleSupport() {
     if (!uid || busy || !user) return;
     setBusy(true);
+    setActionError(false);
     try {
       if (mySupport) {
         await unsupportIdea(idea.id, uid);
@@ -81,6 +91,9 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
       }
       setReloadTick((t) => t + 1);
       onMutated();
+    } catch (err) {
+      console.error("Failed to save support", err);
+      setActionError(true);
     } finally {
       setBusy(false);
     }
@@ -90,11 +103,15 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     e.preventDefault();
     if (!user || !post.trim() || busy) return;
     setBusy(true);
+    setActionError(false);
     try {
       await postTimelineUpdate(idea.id, { uid: user.uid, displayName: user.displayName }, post.trim());
       setPost("");
       setReloadTick((t) => t + 1);
       onMutated();
+    } catch (err) {
+      console.error("Failed to post timeline update", err);
+      setActionError(true);
     } finally {
       setBusy(false);
     }
@@ -152,6 +169,13 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
             <span>Supported by {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}</span>
           )}
         </div>
+
+        {/* Failed action (upvote/support/timeline post) */}
+        {actionError && (
+          <p role="alert" className="mt-3 text-xs font-semibold text-muted">
+            {strings.errors.actionFailed}
+          </p>
+        )}
 
         {/* Moderation feedback */}
         {idea.moderationFeedback && (

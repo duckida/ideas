@@ -2,7 +2,7 @@
 
 // IdeaCard — a compact card in the ideas grid. Clicking opens the IdeaModal.
 
-import { strings } from "@/lib/strings";
+import { strings, t } from "@/lib/strings";
 import type { Idea, SupportDoc } from "@/lib/types";
 
 interface IdeaCardProps {
@@ -16,6 +16,9 @@ interface IdeaCardProps {
 
 export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: IdeaCardProps) {
   const hasSupport = supports.length > 0;
+  // Fallback when the supporter-name docs couldn't be loaded: the idea doc's
+  // denormalized count still proves (and shows) that leaders backed it.
+  const supportCountOnly = !hasSupport && idea.supportCount > 0;
   const hasUpvoted = currentUserId !== undefined && idea.upvoteUserIds.includes(currentUserId);
 
   return (
@@ -42,6 +45,13 @@ export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: Id
           {hasSupport && (
             <span className="text-xs font-medium text-muted">
               {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}
+            </span>
+          )}
+          {supportCountOnly && (
+            <span className="text-xs font-medium text-muted">
+              {idea.supportCount === 1
+                ? strings.idea.oneSupporter
+                : t(strings.idea.supportedByCount, { count: idea.supportCount })}
             </span>
           )}
         </div>
