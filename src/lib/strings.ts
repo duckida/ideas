@@ -44,6 +44,9 @@ export const strings = {
     supportedByLeaders: "Supported by leaders",
     sortNew: "New",
     sortUpvotes: "Upvotes",
+    search: "Search",
+    searchPlaceholder: "Search ideas…",
+    noResults: "No ideas match your search.",
   },
 
   idea: {

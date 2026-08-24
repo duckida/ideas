@@ -29,6 +29,8 @@ export default function IdeasPage() {
     }
     return "new";
   });
+  const [showSearch, setShowSearch] = useState(false);
+  const [query, setQuery] = useState("");
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
@@ -109,45 +111,97 @@ export default function IdeasPage() {
     localStorage.setItem("ideas_sort", value);
   }
 
+  const visibleIdeas = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return ideas;
+    return ideas.filter(
+      (i) =>
+        i.title.toLowerCase().includes(q) ||
+        i.description.toLowerCase().includes(q),
+    );
+  }, [ideas, query]);
+
+  function toggleSearch() {
+    setShowSearch((prev) => {
+      if (prev) setQuery("");
+      return !prev;
+    });
+  }
+
   return (
     <ProtectedRoute>
       <Navbar />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-extrabold text-ink">{strings.ideasHome.heading}</h1>
-          <div className="flex rounded-full border border-line bg-surface p-1">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => handleSort("new")}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                sort === "new"
-                  ? "bg-ink text-white"
-                  : "text-muted hover:bg-background"
+              onClick={toggleSearch}
+              aria-expanded={showSearch}
+              aria-label={strings.ideasHome.search}
+              title={strings.ideasHome.search}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition ${
+                showSearch
+                  ? "border-kakao bg-kakao text-ink"
+                  : "border-line bg-surface text-muted hover:bg-background hover:text-foreground"
               }`}
             >
-              {strings.ideasHome.sortNew}
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <circle cx="6.5" cy="6.5" r="4.25" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M10 10L13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
             </button>
-            <button
-              type="button"
-              onClick={() => handleSort("upvotes")}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                sort === "upvotes"
-                  ? "bg-ink text-white"
-                  : "text-muted hover:bg-background"
-              }`}
-            >
-              {strings.ideasHome.sortUpvotes}
-            </button>
+            <div className="flex rounded-full border border-line bg-surface p-1">
+              <button
+                type="button"
+                onClick={() => handleSort("new")}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  sort === "new"
+                    ? "bg-ink text-white"
+                    : "text-muted hover:bg-background"
+                }`}
+              >
+                {strings.ideasHome.sortNew}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSort("upvotes")}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  sort === "upvotes"
+                    ? "bg-ink text-white"
+                    : "text-muted hover:bg-background"
+                }`}
+              >
+                {strings.ideasHome.sortUpvotes}
+              </button>
+            </div>
           </div>
         </div>
+
+        {showSearch && (
+          <div className="mt-4">
+            <input
+              type="search"
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={strings.ideasHome.searchPlaceholder}
+              aria-label={strings.ideasHome.search}
+              className="w-full rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink placeholder:text-muted focus:border-kakao focus:outline-none"
+            />
+          </div>
+        )}
 
         {loading ? (
           <p className="mt-8 text-muted">{strings.common.loading}</p>
         ) : ideas.length === 0 ? (
           <p className="mt-8 text-muted">{strings.ideasHome.empty}</p>
+        ) : visibleIdeas.length === 0 ? (
+          <p className="mt-8 text-muted">{strings.ideasHome.noResults}</p>
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {ideas.map((idea) => (
+            {visibleIdeas.map((idea) => (
               <IdeaCard
                 key={idea.id}
                 idea={idea}
