@@ -5,6 +5,7 @@
 // click, the ✕ button, or Escape.
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { strings, t } from "@/lib/strings";
 
@@ -26,7 +27,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  // Portal to <body>: the navbar header uses backdrop-blur, which makes it
+  // the containing block for fixed descendants and would pin this overlay to
+  // the header instead of centring it in the viewport. Only mounted from a
+  // user click, so document always exists here.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       role="dialog"
@@ -97,6 +102,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           )}
         </p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
