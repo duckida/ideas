@@ -23,6 +23,7 @@ import {
   increment,
   runTransaction,
   type Firestore,
+  type Timestamp,
 } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import {
@@ -434,6 +435,84 @@ export async function updateUserTitle(
   firestore: Firestore = db(),
 ): Promise<void> {
   await updateDoc(doc(firestore, "users", uid), { title });
+}
+
+// ---- Invited leaders (pre-signup) ----
+
+/** An invited leader record — stores the email (and optional display name /
+ * title) of a leader who hasn't signed up yet. */
+export interface InvitedLeader {
+  email: string;
+  displayName?: string;
+  title?: string;
+  invitedBy: string;
+  createdAt: Timestamp | null;
+}
+
+/** Add a leader before they've signed up. Document ID = normalized email. */
+export async function addInvitedLeader(
+  email: string,
+  invitedBy: string,
+  displayName?: string,
+  title?: string,
+  firestore: Firestore = db(),
+): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  await setDoc(doc(firestore, "invitedLeaders", normalized), {
+    email: normalized,
+    displayName: displayName ?? null,
+    title: title ?? null,
+    invitedBy,
+    createdAt: serverTimestamp(),
+  });
+}
+
+/** Remove a pending leader invitation by email. */
+export async function removeInvitedLeader(
+  email: string,
+  firestore: Firestore = db(),
+): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  await deleteDoc(doc(firestore, "invitedLeaders", normalized));
+}
+
+/** Check if an email is in the invited-leaders list. */
+export async function getInvitedLeaderByEmail(
+  email: string,
+  firestore: Firestore = db(),
+): Promise<InvitedLeader | null> {
+  const normalized = email.trim().toLowerCase();
+  const snap = await getDoc(doc(firestore, "invitedLeaders", normalized));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    email: String(d.email ?? ""),
+    displayName: d.displayName ? String(d.displayName) : undefined,
+    title: d.title ? String(d.title) : undefined,
+    invitedBy: String(d.invitedBy ?? ""),
+    createdAt: (d.createdAt as Timestamp) ?? null,
+  };
+}
+
+/** All pending leader invitations — used by the admin page. */
+export async function getInvitedLeaders(
+  firestore: Firestore = db(),
+): Promise<InvitedLeader[]> {
+  const q = query(
+    collection(firestore, "invitedLeaders"),
+    orderBy("createdAt", "desc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((s) => {
+    const d = s.data();
+    return {
+      email: String(d.email ?? ""),
+      displayName: d.displayName ? String(d.displayName) : undefined,
+      title: d.title ? String(d.title) : undefined,
+      invitedBy: String(d.invitedBy ?? ""),
+      createdAt: (d.createdAt as Timestamp) ?? null,
+    };
+  });
 }
 
 /** Update an idea (for resubmission after changes_requested). */

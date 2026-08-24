@@ -71,3 +71,12 @@ export interface SupportDoc {
   leaderTitle?: string;
   createdAt: Timestamp | null;
 }
+
+/** Mirrors the `invitedLeaders` Firestore document shape. */
+export interface InvitedLeader {
+  email: string;
+  displayName?: string;
+  title?: string;
+  invitedBy: string;
+  createdAt: Timestamp | null;
+}

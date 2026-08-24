@@ -21,6 +21,7 @@ import {
 import { getFirebaseApp } from "@/lib/firebase";
 import { DEFAULT_ROLE, type Role } from "@/lib/types";
 import { LAST_IDEA_AT_FIELD, MAX_DISPLAY_NAME_LENGTH } from "@/lib/defs";
+import { getInvitedLeaderByEmail } from "@/lib/api";
 
 /** OAuth provider for Microsoft / Office 365 school accounts. */
 export function microsoftProvider(): OAuthProvider {
@@ -118,6 +119,20 @@ export async function loadUserDoc(user: User): Promise<AuthUser> {
 async function ensureUserDoc(user: User): Promise<void> {
   const db = getFirestore(getFirebaseApp());
   const ref = doc(db, "users", user.uid);
+
+  // Check if this email was pre-invited as a leader.
+  let invitedRole: Role = DEFAULT_ROLE;
+  if (user.email) {
+    try {
+      const invited = await getInvitedLeaderByEmail(user.email);
+      if (invited) {
+        invitedRole = "leader";
+      }
+    } catch {
+      // If the invitedLeaders read fails (e.g. offline), just default to student.
+    }
+  }
+
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) {
@@ -128,9 +143,14 @@ async function ensureUserDoc(user: User): Promise<void> {
         // True when the provider handed us a real name (e.g. Microsoft),
         // false for email/password signups so the one-time name gate shows.
         displayNameSet: Boolean(user.displayName && !looksLikeEmail(user.displayName)),
-        role: DEFAULT_ROLE,
+        role: invitedRole,
         [LAST_IDEA_AT_FIELD]: null,
       });
+      // If invited, clean up the pending invitation.
+      if (invitedRole === "leader" && user.email) {
+        const invitedRef = doc(db, "invitedLeaders", user.email.toLowerCase());
+        tx.delete(invitedRef);
+      }
     }
   });
 }

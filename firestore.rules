@@ -167,5 +167,16 @@ service cloud.firestore {
       allow delete: if isLeader()
         && resource.data.leaderId == request.auth.uid;
     }
+
+    // ---- invitedLeaders (pre-signup leader invitations) ----
+    // Admins may fully manage. Any signed-in user may read (so ensureUserDoc
+    // can check the invitation during sign-in) and delete their own
+    // invitation (cleaned up during ensureUserDoc on first sign-in).
+    // Document ID = email.
+    match /invitedLeaders/{email} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin();
+      allow delete: if isSignedIn();
+    }
   }
 }

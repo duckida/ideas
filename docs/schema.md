@@ -55,6 +55,22 @@ The document ID encodes the pair, so supporting again is an idempotent
 `setDoc` and un-supporting is a `deleteDoc`. Used for the "Supported by
 leaders" badge and the leader's supported list.
 
+## invitedLeaders / {email}
+
+Pre-signup leader invitations. An admin can add a leader by email before
+they've created an account. When the user signs up, `ensureUserDoc`
+auto-promotes them to leader and deletes this record.
+
+| field       | type     | notes                                      |
+| ----------- | -------- | ------------------------------------------ |
+| email       | string   | normalised to lowercase                    |
+| displayName | string?  | optional display name for the admin UI     |
+| title       | string?  | optional leader title (e.g. "Head Girl")   |
+| invitedBy   | string   | uid of the admin who created the invite    |
+| createdAt   | timestamp|                                            |
+
+Document ID = normalised email (case-insensitive dedup).
+
 ## Role rules (enforced in firestore.rules)
 
 | action                     | student | leader | admin |
@@ -66,6 +82,7 @@ leaders" badge and the leader's supported list.
 | Moderate (status change)   | –       | ✔      | ✔     |
 | Support / un-support       | –       | ✔      | ✔     |
 | Change user roles          | –       | –      | ✔     |
+| Manage invited leaders     | –       | –      | ✔     |
 
 ## Composite indexes (firestore.indexes.json)
 
