@@ -84,7 +84,6 @@ export const strings = {
     deleteConfirmDetail: "This can't be undone.",
     deleteError: "Couldn't delete this idea. Please try again.",
     edit: "Edit",
-    author: "by {name}",
     anonymous: "Anonymous",
     statusPending: "Pending review",
     statusApproved: "Approved",
