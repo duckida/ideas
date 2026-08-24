@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon from "@hackclub/icons";
 import { useAuth } from "@/context/AuthContext";
+import { SettingsModal } from "@/components/SettingsModal";
 import { getChangesRequestedCount } from "@/lib/api";
 import { strings } from "@/lib/strings";
 
@@ -28,6 +29,7 @@ export function Navbar() {
   const pathname = usePathname();
   const { user, role, signOut } = useAuth();
   const [changesCount, setChangesCount] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -86,19 +88,17 @@ export function Navbar() {
             {user?.displayName}
           </span>
 
-          {/* Settings — icon in a pill, next to sign out */}
-          <Link
-            href="/settings"
+          {/* Settings — icon in a pill, opens the settings modal */}
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
             aria-label={strings.nav.settings}
+            aria-haspopup="dialog"
             title={strings.nav.settings}
-            className={`flex h-9 w-9 items-center justify-center rounded-full border transition ${
-              pathname === "/settings" || pathname.startsWith("/settings/")
-                ? "border-kakao bg-kakao text-ink"
-                : "border-line bg-surface text-muted hover:bg-background hover:text-foreground"
-            }`}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition hover:bg-background hover:text-foreground"
           >
             <Icon glyph="settings" size={18} />
-          </Link>
+          </button>
 
           <button
             type="button"
@@ -111,6 +111,8 @@ export function Navbar() {
           </button>
         </div>
       </div>
+
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </header>
   );
 }
