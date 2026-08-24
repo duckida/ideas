@@ -36,12 +36,9 @@ export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: Id
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-medium text-muted">
             {idea.showAuthorName
-              ? `by ${idea.authorName}`
+              ? (idea.authorTitle ? `${idea.authorName} (${idea.authorTitle})` : idea.authorName)
               : strings.idea.anonymous}
           </span>
-          {idea.showAuthorName && idea.authorTitle && (
-            <span className="text-xs font-semibold text-muted">{idea.authorTitle}</span>
-          )}
           {hasSupport && (
             <span className="text-xs font-medium text-muted">
               {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}

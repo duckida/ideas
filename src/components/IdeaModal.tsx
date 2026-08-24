@@ -173,12 +173,9 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
         <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted">
           <span>
             {idea.showAuthorName
-              ? `by ${idea.authorName}`
+              ? (idea.authorTitle ? `${idea.authorName} (${idea.authorTitle})` : idea.authorName)
               : strings.idea.anonymous}
           </span>
-          {idea.showAuthorName && idea.authorTitle && (
-            <span className="text-xs font-semibold">({idea.authorTitle})</span>
-          )}
           {supports.length > 0 && (
             <span>Supported by {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}</span>
           )}
