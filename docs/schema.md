@@ -76,6 +76,7 @@ Document ID = normalised email (case-insensitive dedup).
 | action                     | student | leader | admin |
 | -------------------------- | ------- | ------ | ----- |
 | Read any doc               | ✔       | ✔      | ✔     |
+| Upvote any idea            | ✔       | ✔      | ✔     |
 | Create idea (pending)      | ✔       | ✔      | ✔     |
 | Update own pending idea    | ✔       | ✔      | ✔     |
 | Delete own idea            | ✔       | ✔      | ✔     |

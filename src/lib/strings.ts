@@ -176,6 +176,7 @@ export const strings = {
     generic: "Something went wrong.",
     actionFailed: "That didn't save. Please try again.",
     offline: "Couldn't reach the server. Check your connection and try again.",
+    rulesDeploy: "The server rejected this save — the deployed Firestore security rules look out of date. Run: firebase deploy --only firestore:rules,firestore:indexes",
   },
 
   common: {

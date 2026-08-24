@@ -139,6 +139,29 @@ service cloud.firestore {
       allow delete: if isSignedIn()
         && resource.data.authorId == request.auth.uid;
 
+      // Upvotes: any signed-in user may toggle ONLY THEIR OWN entry. The
+      // diff guard pins the write to the upvote fields, and the size/count
+      // checks keep upvoteCount in lockstep with the array (add: +1 and a
+      // superset containing me; remove: −1 and a subset of the old array).
+      allow update: if isSignedIn()
+        && resource.data.upvoteUserIds is list
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['upvoteUserIds', 'upvoteCount', 'updatedAt'])
+        && (
+          (
+            !(request.auth.uid in resource.data.upvoteUserIds)
+            && request.resource.data.upvoteUserIds.size() == resource.data.upvoteUserIds.size() + 1
+            && request.resource.data.upvoteUserIds.hasAll(resource.data.upvoteUserIds)
+            && request.resource.data.upvoteCount == resource.data.upvoteCount + 1
+          )
+          || (
+            request.auth.uid in resource.data.upvoteUserIds
+            && request.resource.data.upvoteUserIds.size() == resource.data.upvoteUserIds.size() - 1
+            && resource.data.upvoteUserIds.hasAll(request.resource.data.upvoteUserIds)
+            && request.resource.data.upvoteCount == resource.data.upvoteCount - 1
+          )
+        );
+
       // Authors may update their own pending or changes_requested ideas;
       // leaders/admins moderate.
       // Leaders also mutate `supportCount`/`timeline` via support + timeline

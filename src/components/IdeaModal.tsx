@@ -24,7 +24,7 @@ interface IdeaModalProps {
 }
 
 export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalProps) {
-  const { user, isLeader } = useAuth();
+  const { user, isLeader, isAdmin } = useAuth();
   const [idea, setIdea] = useState<Idea>(initialIdea);
   const [supports, setSupports] = useState<Array<{ leaderId: string; leaderName: string; leaderTitle?: string }>>([]);
   const [busy, setBusy] = useState(false);
@@ -54,10 +54,14 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   const hasUpvoted = uid !== undefined && idea.upvoteUserIds.includes(uid);
   const mySupport = supports.find((s) => s.leaderId === uid);
 
-  /** Firestore errors carry a `code`; map the common ones to honest copy. */
+  /** Firestore errors carry a `code`; map the common ones to honest copy.
+   * For admins a permission-denied almost always means the deployed
+   * security rules are older than the repo's — say so explicitly. */
   function actionErrorMessage(err: unknown): string {
     const code = (err as { code?: string } | null)?.code ?? "";
-    if (code === "permission-denied") return strings.errors.permission;
+    if (code === "permission-denied") {
+      return isAdmin ? strings.errors.rulesDeploy : strings.errors.permission;
+    }
     if (code === "unavailable" || code === "network-request-failed") {
       return strings.errors.offline;
     }
