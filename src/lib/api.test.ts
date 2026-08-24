@@ -257,10 +257,32 @@ describe("moderateIdea", () => {
 });
 
 describe("supportIdea / unsupportIdea", () => {
+  /** Fake transaction bound to a support-doc existence flag. */
+  function supportTx(exists: boolean) {
+    return {
+      get: vi.fn(async () => ({ exists: () => exists })),
+      set: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+  }
+
+  function runWith(tx: ReturnType<typeof supportTx>) {
+    firestoreModule.runTransaction.mockImplementationOnce(
+      async (_db: unknown, fn: (t: unknown) => Promise<unknown>) => fn(tx),
+    );
+  }
+
   it("creates a support doc and increments the idea's supportCount", async () => {
+    const tx = supportTx(false);
+    runWith(tx);
+
     await supportIdea("i1", { uid: "u9", displayName: "Ms. Kim" }, db);
 
-    expect(firestoreModule.setDoc).toHaveBeenCalledWith(
+    expect(tx.get).toHaveBeenCalledWith(
+      { __type: "doc", path: "supports", ids: ["i1_u9"] },
+    );
+    expect(tx.set).toHaveBeenCalledWith(
       { __type: "doc", path: "supports", ids: ["i1_u9"] },
       {
         ideaId: "i1",
@@ -270,7 +292,7 @@ describe("supportIdea / unsupportIdea", () => {
         createdAt: { __type: "serverTimestamp" },
       },
     );
-    expect(firestoreModule.updateDoc).toHaveBeenCalledWith(
+    expect(tx.update).toHaveBeenCalledWith(
       ideaDoc("i1"),
       expect.objectContaining({
         supportCount: { __op: "increment", n: 1 },
@@ -279,19 +301,42 @@ describe("supportIdea / unsupportIdea", () => {
     );
   });
 
+  it("is a no-op when the idea is already supported (no double increment)", async () => {
+    const tx = supportTx(true);
+    runWith(tx);
+
+    await supportIdea("i1", { uid: "u9", displayName: "Ms. Kim" }, db);
+
+    expect(tx.set).not.toHaveBeenCalled();
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
   it("deletes the support doc and decrements the idea's supportCount", async () => {
+    const tx = supportTx(true);
+    runWith(tx);
+
     await unsupportIdea("i1", "u9", db);
 
-    expect(firestoreModule.deleteDoc).toHaveBeenCalledWith(
+    expect(tx.delete).toHaveBeenCalledWith(
       { __type: "doc", path: "supports", ids: ["i1_u9"] },
     );
-    expect(firestoreModule.updateDoc).toHaveBeenCalledWith(
+    expect(tx.update).toHaveBeenCalledWith(
       ideaDoc("i1"),
       expect.objectContaining({
         supportCount: { __op: "increment", n: -1 },
         updatedAt: { __type: "serverTimestamp" },
       }),
     );
+  });
+
+  it("is a no-op when the support doc is already gone", async () => {
+    const tx = supportTx(false);
+    runWith(tx);
+
+    await unsupportIdea("i1", "u9", db);
+
+    expect(tx.delete).not.toHaveBeenCalled();
+    expect(tx.update).not.toHaveBeenCalled();
   });
 });
 
