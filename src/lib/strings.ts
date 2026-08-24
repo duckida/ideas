@@ -47,6 +47,8 @@ export const strings = {
     search: "Search",
     searchPlaceholder: "Search ideas…",
     noResults: "No ideas match your search.",
+    loadError: "Couldn't load ideas.",
+    retry: "Try again",
   },
 
   idea: {

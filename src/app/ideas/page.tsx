@@ -22,6 +22,7 @@ export default function IdeasPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSubmit, setShowSubmit] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
   const [sort, setSort] = useState<"new" | "upvotes">(() => {
     if (typeof window !== "undefined") {
@@ -83,6 +84,7 @@ export default function IdeasPage() {
     getApprovedIdeas(sort)
       .then(async (list) => {
         if (!active) return;
+        setLoadError(false);
         setIdeas(list);
         const entries = await Promise.all(
           list.map(async (idea) => {
@@ -92,7 +94,13 @@ export default function IdeasPage() {
         );
         if (active) setSupportsMap(new Map(entries));
       })
-      .catch(() => {})
+      .catch((err) => {
+        // A failed feed (e.g. a missing Firestore index) must be visible — a
+        // silent catch here made the sort toggle look broken. Cleared again
+        // once a fetch succeeds.
+        console.error("Failed to load approved ideas", err);
+        if (active) setLoadError(true);
+      })
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -195,6 +203,17 @@ export default function IdeasPage() {
 
         {loading ? (
           <p className="mt-8 text-muted">{strings.common.loading}</p>
+        ) : loadError ? (
+          <div className="mt-8">
+            <p className="text-muted">{strings.ideasHome.loadError}</p>
+            <button
+              type="button"
+              onClick={refresh}
+              className="mt-3 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-background"
+            >
+              {strings.ideasHome.retry}
+            </button>
+          </div>
         ) : ideas.length === 0 ? (
           <p className="mt-8 text-muted">{strings.ideasHome.empty}</p>
         ) : visibleIdeas.length === 0 ? (
