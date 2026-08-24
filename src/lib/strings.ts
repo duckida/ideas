@@ -16,7 +16,25 @@ export const strings = {
     moderation: "Moderation",
     me: "Me",
     admin: "Admin",
+    settings: "Settings",
     signOut: "Sign out",
+  },
+
+  settings: {
+    heading: "Settings",
+    appearance: "Appearance",
+    themeLabel: "Theme",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeSystem: "System",
+    aboutHeading: "About",
+    aboutApp:
+      "{brand} is a place where students share ideas for school life. Leaders review and support the best ones, and every idea gets a timeline so progress is easy to follow.",
+    aboutMadeBy: "Made by Nishant Tandon.",
+    aboutSupport: "For support, contact",
+    supportEmail: "n.tandon@whatever.com",
+    buildLabel: "Build",
+    unknownBuild: "development build",
   },
 
   auth: {

@@ -21,6 +21,7 @@ const TABS: Tab[] = [
   { href: "/moderation", label: strings.nav.moderation, roles: ["leader", "admin"] },
   { href: "/me", label: strings.nav.me },
   { href: "/admin", label: strings.nav.admin, roles: ["admin"] },
+  { href: "/settings", label: strings.nav.settings },
 ];
 
 export function Navbar() {
