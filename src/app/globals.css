@@ -15,6 +15,28 @@
   --kakao-red: #f45b3c;
   --border: #f0ead9;
   --success: #35b06c;
+
+  --font-mono-stack: ui-monospace, SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+/*
+ * Dark theme — applied via <html data-theme="dark"> (see ThemeContext and the
+ * pre-paint bootstrap script in layout.tsx). Only the variables change; every
+ * component reads the same semantic tokens.
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #1f1f23;
+  --surface: #28282d;
+  --foreground: #f1f1ef;
+  --muted: #9a978e;
+  --kakao-yellow: #ffe812;
+  --kakao-yellow-soft: #4a3d12;
+  --kakao-ink: #fff3c4;
+  --kakao-red: #ff7a5c;
+  --border: #3a3a40;
+  --success: #4cc982;
 }
 
 @theme inline {
@@ -31,6 +53,7 @@
 
   --font-sans: var(--font-kakao-big-sans), "Kakao Big Sans", ui-rounded,
     system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-mono-stack);
   --radius-xl2: 1.25rem;
 }
 
@@ -38,6 +61,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 /* Rounded, friendly focus ring */
