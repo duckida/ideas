@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Icon from "@hackclub/icons";
 import { useAuth } from "@/context/AuthContext";
 import { getChangesRequestedCount } from "@/lib/api";
 import { strings } from "@/lib/strings";
@@ -21,7 +22,6 @@ const TABS: Tab[] = [
   { href: "/moderation", label: strings.nav.moderation, roles: ["leader", "admin"] },
   { href: "/me", label: strings.nav.me },
   { href: "/admin", label: strings.nav.admin, roles: ["admin"] },
-  { href: "/settings", label: strings.nav.settings },
 ];
 
 export function Navbar() {
@@ -85,12 +85,29 @@ export function Navbar() {
           <span className="hidden text-sm font-semibold text-ink sm:block">
             {user?.displayName}
           </span>
+
+          {/* Settings — icon in a pill, next to sign out */}
+          <Link
+            href="/settings"
+            aria-label={strings.nav.settings}
+            title={strings.nav.settings}
+            className={`flex h-9 w-9 items-center justify-center rounded-full border transition ${
+              pathname === "/settings" || pathname.startsWith("/settings/")
+                ? "border-kakao bg-kakao text-ink"
+                : "border-line bg-surface text-muted hover:bg-background hover:text-foreground"
+            }`}
+          >
+            <Icon glyph="settings" size={18} />
+          </Link>
+
           <button
             type="button"
             onClick={() => signOut()}
-            className="rounded-full border border-line px-3 py-1.5 text-sm font-semibold text-muted transition hover:bg-background hover:text-foreground"
+            aria-label={strings.nav.signOut}
+            title={strings.nav.signOut}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition hover:bg-background hover:text-foreground"
           >
-            {strings.nav.signOut}
+            <Icon glyph="door-leave" size={18} />
           </button>
         </div>
       </div>
