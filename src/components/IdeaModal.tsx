@@ -29,7 +29,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   const [supports, setSupports] = useState<Array<{ leaderId: string; leaderName: string; leaderTitle?: string }>>([]);
   const [busy, setBusy] = useState(false);
   const [post, setPost] = useState("");
-  const [actionError, setActionError] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
@@ -54,10 +54,20 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   const hasUpvoted = uid !== undefined && idea.upvoteUserIds.includes(uid);
   const mySupport = supports.find((s) => s.leaderId === uid);
 
+  /** Firestore errors carry a `code`; map the common ones to honest copy. */
+  function actionErrorMessage(err: unknown): string {
+    const code = (err as { code?: string } | null)?.code ?? "";
+    if (code === "permission-denied") return strings.errors.permission;
+    if (code === "unavailable" || code === "network-request-failed") {
+      return strings.errors.offline;
+    }
+    return strings.errors.actionFailed;
+  }
+
   async function toggleUpvote() {
     if (!uid || busy) return;
     setBusy(true);
-    setActionError(false);
+    setActionError(null);
     try {
       await setUpvote(idea.id, uid, !hasUpvoted);
       setIdea((prev) => ({
@@ -71,7 +81,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
       onMutated();
     } catch (err) {
       console.error("Failed to save upvote", err);
-      setActionError(true);
+      setActionError(actionErrorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -80,7 +90,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   async function toggleSupport() {
     if (!uid || busy || !user) return;
     setBusy(true);
-    setActionError(false);
+    setActionError(null);
     try {
       if (mySupport) {
         await unsupportIdea(idea.id, uid);
@@ -93,7 +103,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
       onMutated();
     } catch (err) {
       console.error("Failed to save support", err);
-      setActionError(true);
+      setActionError(actionErrorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -103,7 +113,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     e.preventDefault();
     if (!user || !post.trim() || busy) return;
     setBusy(true);
-    setActionError(false);
+    setActionError(null);
     try {
       await postTimelineUpdate(idea.id, { uid: user.uid, displayName: user.displayName }, post.trim());
       setPost("");
@@ -111,7 +121,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
       onMutated();
     } catch (err) {
       console.error("Failed to post timeline update", err);
-      setActionError(true);
+      setActionError(actionErrorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -173,7 +183,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
         {/* Failed action (upvote/support/timeline post) */}
         {actionError && (
           <p role="alert" className="mt-3 text-xs font-semibold text-muted">
-            {strings.errors.actionFailed}
+            {actionError}
           </p>
         )}
 

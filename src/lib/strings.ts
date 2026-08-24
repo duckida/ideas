@@ -174,7 +174,8 @@ export const strings = {
     permission: "You don't have permission to do that.",
     notFound: "Not found.",
     generic: "Something went wrong.",
-    actionFailed: "That didn't save. Please check your connection and try again.",
+    actionFailed: "That didn't save. Please try again.",
+    offline: "Couldn't reach the server. Check your connection and try again.",
   },
 
   common: {

@@ -60,7 +60,8 @@ export default function IdeasPage() {
 
       try {
         await setUpvote(idea.id, uid, active);
-      } catch {
+      } catch (err) {
+        console.error("Failed to save upvote", err);
         // Revert on failure
         setIdeas((prev) =>
           prev.map((i) =>
