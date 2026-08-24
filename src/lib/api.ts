@@ -176,36 +176,48 @@ export async function moderateIdea(
   });
 }
 
-/** Publicly mark an idea as supported by a leader. Keeps the denormalized
- * `supportCount` on the idea so the home feed needs no per-idea reads. */
+/** Publicly mark an idea as supported by a leader. Runs in one transaction so
+ * the support doc and the denormalized `supportCount` can never drift apart,
+ * and re-clicking Support is a no-op instead of inflating the counter. */
 export async function supportIdea(
   ideaId: string,
   leader: { uid: string; displayName: string; title?: string },
   firestore: Firestore = db(),
 ): Promise<void> {
-  await setDoc(doc(firestore, "supports", `${ideaId}_${leader.uid}`), {
-    ideaId,
-    leaderId: leader.uid,
-    leaderName: leader.displayName,
-    leaderTitle: leader.title ?? null,
-    createdAt: serverTimestamp(),
-  });
-  await updateDoc(doc(firestore, "ideas", ideaId), {
-    supportCount: increment(1),
-    updatedAt: serverTimestamp(),
+  const supportRef = doc(firestore, "supports", `${ideaId}_${leader.uid}`);
+  await runTransaction(firestore, async (tx) => {
+    const existing = await tx.get(supportRef);
+    if (existing.exists()) return; // already supported
+    tx.set(supportRef, {
+      ideaId,
+      leaderId: leader.uid,
+      leaderName: leader.displayName,
+      leaderTitle: leader.title ?? null,
+      createdAt: serverTimestamp(),
+    });
+    tx.update(doc(firestore, "ideas", ideaId), {
+      supportCount: increment(1),
+      updatedAt: serverTimestamp(),
+    });
   });
 }
 
-/** Remove a leader's support. */
+/** Remove a leader's support (atomically with the counter decrement; no-op
+ * when the support doc is already gone). */
 export async function unsupportIdea(
   ideaId: string,
   leaderId: string,
   firestore: Firestore = db(),
 ): Promise<void> {
-  await deleteDoc(doc(firestore, "supports", `${ideaId}_${leaderId}`));
-  await updateDoc(doc(firestore, "ideas", ideaId), {
-    supportCount: increment(-1),
-    updatedAt: serverTimestamp(),
+  const supportRef = doc(firestore, "supports", `${ideaId}_${leaderId}`);
+  await runTransaction(firestore, async (tx) => {
+    const existing = await tx.get(supportRef);
+    if (!existing.exists()) return; // nothing to remove
+    tx.delete(supportRef);
+    tx.update(doc(firestore, "ideas", ideaId), {
+      supportCount: increment(-1),
+      updatedAt: serverTimestamp(),
+    });
   });
 }
 

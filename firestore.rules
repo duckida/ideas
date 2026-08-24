@@ -175,15 +175,24 @@ service cloud.firestore {
 
     // ---- supports (leader endorsements) ----
     // Clients read supports via collectionGroup, so the read rule lives on the
-    // recursive-wildcard group. Writes are direct doc writes: the leader id
-    // must match the actor and the name must match their own users doc.
+    // recursive-wildcard group. Writes are direct doc writes. Identity is
+    // leaderId == auth.uid (same policy as idea authorName): the display-name
+    // label is only length-capped, NOT compared to users/{uid}.displayName —
+    // that comparison broke every save whenever client and doc name drifted.
     match /{path=**}/supports/{docId} {
+      function validLeaderName(name) {
+        return name is string && name.size() > 0 && name.size() <= maxDisplayNameLength();
+      }
       allow read: if isSignedIn();
       allow create: if isLeader()
         && request.resource.data.ideaId.size() > 0
         && request.resource.data.leaderId == request.auth.uid
-        && request.resource.data.leaderName
-          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName
+        && validLeaderName(request.resource.data.leaderName)
+        // Optional title, capped when present.
+        && (!('leaderTitle' in request.resource.data)
+            || request.resource.data.leaderTitle == null
+            || (request.resource.data.leaderTitle is string
+                && request.resource.data.leaderTitle.size() <= 60))
         && request.resource.data.keys().hasOnly([
             'ideaId', 'leaderId', 'leaderName', 'leaderTitle', 'createdAt',
           ]);
