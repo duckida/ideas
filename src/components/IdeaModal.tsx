@@ -13,7 +13,7 @@ import {
   getIdeaSupports,
   getIdea,
 } from "@/lib/api";
-import { strings } from "@/lib/strings";
+import { strings, t } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
 
 interface IdeaModalProps {
@@ -132,7 +132,9 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M6 2L10 8H2L6 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            {idea.upvoteCount} upvotes
+            {idea.upvoteCount === 1
+              ? strings.idea.oneUpvote
+              : t(strings.idea.upvotes, { count: idea.upvoteCount })}
           </button>
         </div>
 

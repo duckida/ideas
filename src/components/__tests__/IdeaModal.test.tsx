@@ -69,6 +69,14 @@ describe("IdeaModal", () => {
     await waitFor(() => expect(api.setUpvote).toHaveBeenCalledWith("i1", "u2", true));
   });
 
+  it("uses the singular label when an idea has exactly 1 upvote", async () => {
+    render(
+      <IdeaModal idea={{ ...idea, upvoteCount: 1 }} onClose={vi.fn()} onMutated={vi.fn()} />,
+    );
+    expect(await screen.findByRole("button", { name: "1 upvote" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /upvotes/ })).not.toBeInTheDocument();
+  });
+
   it("hides the support button for students", async () => {
     setAuthUser({ uid: "u2", email: "b@x.com", displayName: "Bo", role: "student" });
     render(<IdeaModal idea={idea} onClose={vi.fn()} onMutated={vi.fn()} />);

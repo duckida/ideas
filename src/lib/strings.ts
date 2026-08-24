@@ -51,7 +51,8 @@ export const strings = {
 
   idea: {
     upvote: "Upvote",
-    upvotes: "upvotes",
+    oneUpvote: "1 upvote",
+    upvotes: "{count} upvotes",
     support: "Support",
     supported: "Supported",
     supportedBy: "Supported by {name}",
@@ -137,14 +138,23 @@ export const strings = {
     heading: "Admin",
     addLeader: "Add leader",
     removeLeader: "Remove",
+    removeInvite: "Cancel invite",
     emailLabel: "Leader email",
     emailPlaceholder: "name@school.edu",
+    nameLabel: "Display name (optional)",
+    namePlaceholder: "e.g. Ms. Kim",
+    titleLabel: "Title (optional)",
+    titlePlaceholder: "e.g. Digital Leader",
     add: "Add",
     noLeaders: "No leaders yet.",
+    noInvited: "No pending invitations.",
     userNotFound: "No account found with that email.",
     alreadyLeader: "That user is already a leader.",
     removed: "Leader removed.",
     added: "Leader added.",
+    invited: "Leader invited — they'll be promoted when they sign up.",
+    invitedLabel: "Pending (not signed up yet)",
+    activeLabel: "Active leaders",
   },
 
   leaderboard: {
