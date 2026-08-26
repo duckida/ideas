@@ -69,7 +69,8 @@ service cloud.firestore {
         && request.resource.data.role == 'student'
         && request.resource.data.displayNameSet is bool;
       // A user may update their own display name (once-set flag + rate-limit
-      // field) or title; only an admin may change role. The length/type guards
+      // field); only leaders/admins may set a title; only an admin may change
+      // role. The length/type guards
       // only apply when that field is actually being written, so the
       // server-side lastIdeaAt stamp from createIdea still passes.
       allow update: if isSignedIn() && request.auth.uid == uid
@@ -89,7 +90,7 @@ service cloud.firestore {
         )
         && (
           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['title'])
-          || request.resource.data.title.size() <= 60
+          || (isLeader() && request.resource.data.title.size() <= 60)
         );
       allow update: if isAdmin();
     }
@@ -123,9 +124,9 @@ service cloud.firestore {
         && request.resource.data.showAuthorName is bool
         && request.resource.data.keys().hasOnly([
             'title', 'description', 'status', 'authorId', 'authorName',
-            'authorTitle', 'upvoteUserIds', 'upvoteCount', 'supportCount',
-            'showAuthorName', 'moderationFeedback', 'timeline', 'createdAt',
-            'updatedAt',
+            'authorTitle', 'authorEmail', 'upvoteUserIds', 'upvoteCount',
+            'supportCount', 'showAuthorName', 'moderationFeedback', 'timeline',
+            'createdAt', 'updatedAt',
           ])
         // Rate window: at most one idea submitted every N seconds.
         && (

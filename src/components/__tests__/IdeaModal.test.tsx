@@ -58,6 +58,30 @@ describe("IdeaModal", () => {
     expect(screen.queryByText(/by Ada/)).not.toBeInTheDocument();
   });
 
+  it("shows the author's email in the popup when the idea is not anonymous", async () => {
+    render(
+      <IdeaModal
+        idea={{ ...idea, authorEmail: "ada@example.com" }}
+        onClose={vi.fn()}
+        onMutated={vi.fn()}
+      />,
+    );
+    expect(await screen.findByText("Ada")).toBeInTheDocument();
+    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
+  });
+
+  it("does not show the author's email when the idea is anonymous", async () => {
+    render(
+      <IdeaModal
+        idea={{ ...idea, showAuthorName: false, authorEmail: "ada@example.com" }}
+        onClose={vi.fn()}
+        onMutated={vi.fn()}
+      />,
+    );
+    expect(await screen.findByText("Anonymous")).toBeInTheDocument();
+    expect(screen.queryByText("ada@example.com")).not.toBeInTheDocument();
+  });
+
   it("lets a student upvote and calls setUpvote", async () => {
     setAuthUser({ uid: "u2", email: "b@x.com", displayName: "Bo", role: "student" });
     const user = userEvent.setup();

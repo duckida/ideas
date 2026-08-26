@@ -51,6 +51,25 @@ describe("ModerationItem", () => {
     expect(screen.getByText("Ada (Anonymous)")).toBeInTheDocument();
   });
 
+  it("shows the author's email to moderators when the idea is not anonymous", () => {
+    render(
+      <ModerationItem idea={{ ...pending, authorEmail: "ada@example.com" }} onDone={vi.fn()} />,
+    );
+    expect(screen.getByText("Ada")).toBeInTheDocument();
+    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
+  });
+
+  it("does not expose the email to moderators when the idea is anonymous", () => {
+    render(
+      <ModerationItem
+        idea={{ ...pending, showAuthorName: false, authorEmail: "ada@example.com" }}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Ada (Anonymous)")).toBeInTheDocument();
+    expect(screen.queryByText("ada@example.com")).not.toBeInTheDocument();
+  });
+
   it("approves immediately without a message", async () => {
     const user = userEvent.setup();
     const onDone = vi.fn();

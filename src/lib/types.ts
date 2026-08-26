@@ -36,6 +36,8 @@ export interface Idea {
   authorName: string;
   /** Optional leader title of the author (e.g. "Digital Leader"). */
   authorTitle?: string;
+  /** Denormalized author email (shown when the idea is not anonymous). */
+  authorEmail?: string;
   upvoteUserIds: string[];
   upvoteCount: number;
   /** Denormalized leader-support count; maintained next to the supports

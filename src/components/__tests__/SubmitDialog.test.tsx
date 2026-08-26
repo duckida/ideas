@@ -37,6 +37,7 @@ describe("SubmitDialog", () => {
         description: "Charge your phone in the sun",
         authorId: "u1",
         authorName: "Ada",
+        authorEmail: "a@x.com",
         showAuthorName: true,
       }),
     );

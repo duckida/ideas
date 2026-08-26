@@ -175,6 +175,9 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
             {idea.showAuthorName
               ? (idea.authorTitle ? `${idea.authorName} (${idea.authorTitle})` : idea.authorName)
               : strings.idea.anonymous}
+            {idea.showAuthorName && idea.authorEmail && (
+              <span className="ml-2 text-xs font-normal text-muted">{idea.authorEmail}</span>
+            )}
           </span>
           {supports.length > 0 && (
             <span>Supported by {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}</span>

@@ -53,6 +53,8 @@ export interface NewIdeaInput {
   authorName: string;
   authorTitle?: string;
   showAuthorName: boolean;
+  /** Denormalized author email (stored when the idea is not anonymous). */
+  authorEmail?: string;
 }
 
 export interface IdeaLimits {
@@ -116,6 +118,7 @@ export async function createIdea(
       authorId: input.authorId,
       authorName: input.authorName,
       authorTitle: input.authorTitle ?? null,
+      authorEmail: input.authorEmail ?? null,
       showAuthorName: input.showAuthorName,
       upvoteUserIds: [],
       upvoteCount: 0,
@@ -160,6 +163,7 @@ export async function moderateIdea(
   if (action === "approve") {
     await updateDoc(doc(firestore, "ideas", ideaId), {
       status: "approved",
+      moderatedBy: moderatorId,
       updatedAt: serverTimestamp(),
     });
     return;
@@ -172,6 +176,7 @@ export async function moderateIdea(
       by: moderatorId,
       at: serverTimestamp(),
     },
+    moderatedBy: moderatorId,
     updatedAt: serverTimestamp(),
   });
 }
@@ -267,6 +272,7 @@ function ideaFromSnapshot(snap: {
     authorId: String(d.authorId ?? ""),
     authorName: String(d.authorName ?? ""),
     authorTitle: d.authorTitle ? String(d.authorTitle) : undefined,
+    authorEmail: d.authorEmail ? String(d.authorEmail) : undefined,
     upvoteUserIds: Array.isArray(d.upvoteUserIds) ? (d.upvoteUserIds as string[]) : [],
     upvoteCount: Number(d.upvoteCount ?? 0),
     supportCount: Number(d.supportCount ?? 0),
@@ -342,13 +348,13 @@ export async function getPendingIdeas(
   return snap.docs.map(ideaFromSnapshot);
 }
 
-/** All ideas that have been moderated (have feedback) — used by leaderboard. */
+/** All ideas that have been moderated (approved or changes_requested) — used by leaderboard. */
 export async function getModeratedIdeas(
   firestore: Firestore = db(),
 ): Promise<Idea[]> {
   const q = query(
     collection(firestore, "ideas"),
-    where("moderationFeedback", "!=", null),
+    where("status", "!=", "pending"),
   );
   const snap = await getDocs(q);
   return snap.docs.map(ideaFromSnapshot);

@@ -35,6 +35,7 @@ export function SubmitDialog({
         authorId: user.uid,
         authorName: user.displayName,
         authorTitle: user.title,
+        authorEmail: user.email ?? undefined,
         showAuthorName,
       });
       setStatus("submitted");
