@@ -60,6 +60,7 @@ export const strings = {
     sortNew: "New",
     sortUpvotes: "Upvotes",
     search: "Search",
+    refresh: "Refresh",
     searchPlaceholder: "Search ideas…",
     noResults: "No ideas match your search.",
     loadError: "Couldn't load ideas.",

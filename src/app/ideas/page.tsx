@@ -142,6 +142,14 @@ export default function IdeasPage() {
     });
   }
 
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <ProtectedRoute>
       <Navbar />
@@ -164,6 +172,18 @@ export default function IdeasPage() {
               <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
                 <circle cx="6.5" cy="6.5" r="4.25" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M10 10L13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={refresh}
+              aria-label={strings.ideasHome.refresh}
+              title={strings.ideasHome.refresh}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-muted transition hover:bg-background hover:text-foreground"
+            >
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <path d="M13.5 7.5C13.5 10.8137 10.8137 13.5 7.5 13.5C4.18629 13.5 1.5 10.8137 1.5 7.5C1.5 4.18629 4.18629 1.5 7.5 1.5C9.63672 1.5 11.5038 2.63623 12.5218 4.375" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M13.5 1.5V5.5H9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
             <div className="flex rounded-full border border-line bg-surface p-1">
