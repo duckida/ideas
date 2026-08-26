@@ -54,12 +54,12 @@ export default function ModerationPage() {
         for (const l of leaders) nameMap.set(l.uid, l.displayName);
         const map = new Map<string, LeaderStats>();
         for (const idea of ideas) {
-          const fb = idea.moderationFeedback;
-          if (!fb) continue;
-          const existing = map.get(fb.by);
+          const modBy = idea.moderatedBy;
+          if (!modBy) continue;
+          const existing = map.get(modBy);
           const entry = existing ?? {
-            uid: fb.by,
-            name: nameMap.get(fb.by) ?? fb.by,
+            uid: modBy,
+            name: nameMap.get(modBy) ?? modBy,
             total: 0,
             approved: 0,
             sentBack: 0,
@@ -67,7 +67,7 @@ export default function ModerationPage() {
           entry.total++;
           if (idea.status === "approved") entry.approved++;
           else entry.sentBack++;
-          if (!existing) map.set(fb.by, entry);
+          if (!existing) map.set(modBy, entry);
         }
         setStats([...map.values()].sort((a, b) => b.total - a.total));
       })

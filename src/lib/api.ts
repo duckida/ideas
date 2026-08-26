@@ -278,6 +278,7 @@ function ideaFromSnapshot(snap: {
     supportCount: Number(d.supportCount ?? 0),
     showAuthorName: d.showAuthorName !== false,
     moderationFeedback: (d.moderationFeedback as Idea["moderationFeedback"]) ?? null,
+    moderatedBy: d.moderatedBy ? String(d.moderatedBy) : undefined,
     timeline: Array.isArray(d.timeline) ? (d.timeline as Idea["timeline"]) : [],
     createdAt: (d.createdAt as Idea["createdAt"]) ?? null,
     updatedAt: (d.updatedAt as Idea["updatedAt"]) ?? null,
@@ -582,6 +583,7 @@ export async function updateIdea(
     showAuthorName: input.showAuthorName,
     status: "pending",
     moderationFeedback: null,
+    moderatedBy: null,
     updatedAt: serverTimestamp(),
   });
 }

@@ -46,6 +46,8 @@ export interface Idea {
   /** When false the author's name is hidden in public views. */
   showAuthorName: boolean;
   moderationFeedback: ModerationFeedback | null;
+  /** uid of the moderator who last approved or sent-back this idea. */
+  moderatedBy?: string;
   timeline: TimelineEntry[];
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
