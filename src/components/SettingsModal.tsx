@@ -101,6 +101,17 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </span>
           )}
         </p>
+
+        <hr className="my-5 border-line" />
+
+        <a
+          href="https://letterbird.co/ideas-feedback"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block rounded-full border border-line bg-background px-5 py-2 text-sm font-semibold text-foreground transition hover:bg-foreground hover:text-background"
+        >
+          Share your Feedback
+        </a>
       </div>
     </div>,
     document.body,
