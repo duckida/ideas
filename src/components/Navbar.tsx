@@ -51,7 +51,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center gap-2 px-3 py-2 sm:gap-4 sm:px-4 sm:py-3">
+      <div className="mx-auto flex max-w-5xl items-center gap-2 px-3 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:gap-4 sm:px-4 sm:py-3 sm:pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <Link href="/ideas" className="flex shrink-0 items-center gap-2">
           <span className="inline-block h-6 w-6 rounded-full bg-kakao" />
           <span className="hidden text-lg font-extrabold text-ink sm:inline">{strings.brand.name}</span>

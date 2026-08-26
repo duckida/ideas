@@ -134,7 +134,7 @@ export default function AdminPage() {
     <RoleGate roles={["admin"]}>
       <ProtectedRoute>
         <Navbar />
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:py-8">
           <h1 className="text-2xl font-extrabold text-ink">{strings.admin.heading}</h1>
 
           <form onSubmit={handleAdd} className="mt-6 space-y-3">

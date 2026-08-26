@@ -84,7 +84,7 @@ export default function ModerationPage() {
     <RoleGate roles={["leader", "admin"]}>
       <ProtectedRoute>
         <Navbar />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">
           <h1 className="text-2xl font-extrabold text-ink">{strings.moderation.heading}</h1>
 
           {loading ? (

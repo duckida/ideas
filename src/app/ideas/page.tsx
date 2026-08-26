@@ -153,7 +153,7 @@ export default function IdeasPage() {
   return (
     <ProtectedRoute>
       <Navbar />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:py-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-extrabold text-ink sm:text-2xl">{strings.ideasHome.heading}</h1>
           <div className="flex items-center gap-2">
