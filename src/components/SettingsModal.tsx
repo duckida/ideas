@@ -110,7 +110,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           rel="noopener noreferrer"
           className="inline-block rounded-full border border-line bg-background px-5 py-2 text-sm font-semibold text-foreground transition hover:bg-foreground hover:text-background"
         >
-          Share your Feedback
+          {strings.settings.feedbackButton}
         </a>
       </div>
     </div>,

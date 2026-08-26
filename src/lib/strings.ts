@@ -32,6 +32,7 @@ export const strings = {
     supportEmail: "n.tandon@holmegrange.org",
     buildLabel: "Open Source!",
     unknownBuild: "development build",
+    feedbackButton: "Share your Feedback",
   },
 
   auth: {
