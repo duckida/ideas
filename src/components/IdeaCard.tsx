@@ -36,7 +36,10 @@ export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: Id
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-medium text-muted">
             {idea.showAuthorName
-              ? (idea.authorTitle ? `${idea.authorName} (${idea.authorTitle})` : idea.authorName)
+              ? (<>
+                  <span className="font-bold text-ink">{idea.authorName}</span>
+                  {idea.authorTitle ? ` (${idea.authorTitle})` : ""}
+                </>)
               : strings.idea.anonymous}
           </span>
           {hasSupport && (
