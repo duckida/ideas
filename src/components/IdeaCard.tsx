@@ -2,7 +2,7 @@
 
 // IdeaCard — a compact card in the ideas grid. Clicking opens the IdeaModal.
 
-import { strings, t } from "@/lib/strings";
+import { strings, t, supportersList } from "@/lib/strings";
 import type { Idea, SupportDoc } from "@/lib/types";
 
 interface IdeaCardProps {
@@ -36,16 +36,19 @@ export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: Id
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-medium text-muted">
             {idea.showAuthorName
-              ? (<>
-                  <span className="font-bold text-ink">{idea.authorName}</span>
-                  {idea.authorTitle ? ` (${idea.authorTitle})` : ""}
-                </>)
+              ? (
+                  <span className="font-bold text-ink">
+                    {idea.authorTitle
+                      ? t(strings.idea.authorWithTitle, { name: idea.authorName, title: idea.authorTitle })
+                      : idea.authorName}
+                  </span>
+                )
               : <span className="font-bold text-ink">{strings.idea.anonymous}</span>}
           </span>
           {hasSupport && (
             <span className="text-xs font-medium text-muted">
               {t(strings.idea.supportedBy, {
-                name: supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", "),
+                name: supportersList(supports),
               })}
             </span>
           )}

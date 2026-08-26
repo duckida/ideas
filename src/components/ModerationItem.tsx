@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { moderateIdea, type ModerationAction } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { strings } from "@/lib/strings";
+import { strings, t } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
 
 interface ModerationItemProps {
@@ -46,7 +46,10 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
       <p className="mt-2 text-xs font-semibold text-muted">
         {idea.showAuthorName
           ? idea.authorName
-          : `${idea.authorName} (${strings.idea.anonymous})`}
+          : t(strings.moderation.anonymousFormat, {
+              name: idea.authorName,
+              anonymous: strings.idea.anonymous,
+            })}
         {idea.showAuthorName && idea.authorEmail && (
           <span className="ml-2 font-normal text-muted">{idea.authorEmail}</span>
         )}

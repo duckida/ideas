@@ -13,7 +13,7 @@ import {
   getIdeaSupports,
   getIdea,
 } from "@/lib/api";
-import { strings, t } from "@/lib/strings";
+import { strings, t, supportersList, formatTimelineDate } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
 
 interface IdeaModalProps {
@@ -173,14 +173,16 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
         <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted">
           <span>
             {idea.showAuthorName
-              ? (idea.authorTitle ? `${idea.authorName} (${idea.authorTitle})` : idea.authorName)
+              ? (idea.authorTitle
+                  ? t(strings.idea.authorWithTitle, { name: idea.authorName, title: idea.authorTitle })
+                  : idea.authorName)
               : strings.idea.anonymous}
             {idea.showAuthorName && idea.authorEmail && (
               <span className="ml-2 text-xs font-normal text-muted">{idea.authorEmail}</span>
             )}
           </span>
           {supports.length > 0 && (
-            <span>Supported by {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}</span>
+            <span>{t(strings.idea.supportedBy, { name: supportersList(supports) })}</span>
           )}
         </div>
 
@@ -236,13 +238,11 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
             <ul className="mt-3 space-y-4">
               {sortedTimeline.map((entry) => {
                 const date = entry.createdAt?.toDate();
-                const dateStr = date
-                  ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                  : "";
+                const dateStr = date ? formatTimelineDate(date) : "";
                 return (
                   <li key={entry.id}>
                     <p className="text-sm leading-relaxed text-foreground">
-                      {dateStr}: - {entry.message}
+                      {t(strings.timeline.dateEntry, { date: dateStr, message: entry.message })}
                     </p>
                     <p className="text-xs text-muted">{entry.leaderName}</p>
                   </li>

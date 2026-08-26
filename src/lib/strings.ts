@@ -83,6 +83,10 @@ export const strings = {
     deleteError: "Couldn't delete this idea. Please try again.",
     edit: "Edit",
     anonymous: "Anonymous",
+    /** Author name with an optional title: "{name} ({title})". */
+    authorWithTitle: "{name} ({title})",
+    /** Supporter/leader name with an optional title: "{name} ({title})". */
+    leaderWithTitle: "{name} ({title})",
     statusPending: "Pending review",
     statusApproved: "Approved",
     statusChangesRequested: "Changes requested",
@@ -106,6 +110,10 @@ export const strings = {
     postPlaceholder: "Share your progress towards this idea",
     postButton: "Post update",
     postLabel: "Timeline update",
+    /** Intl.DateTimeFormat options for a timeline entry's date label. */
+    dateFormat: "month short, day numeric",
+    /** Timeline entry layout: the {date} and {message} joined by this. */
+    dateEntry: "{date}: - {message}",
   },
 
   fab: {
@@ -124,6 +132,8 @@ export const strings = {
   moderation: {
     heading: "Moderation",
     empty: "Nothing to review yet :D",
+    /** Shown to moderators when the author hid their name: "{name} ({anonymous})". */
+    anonymousFormat: "{name} ({anonymous})",
     approve: "Approve",
     requestChanges: "Request changes",
     feedbackLabel: "Message (shown to the creator)",
@@ -181,6 +191,7 @@ export const strings = {
 
   common: {
     loading: "Loading…",
+    loadingDots: "…",
     cancel: "Cancel",
     save: "Save",
     close: "Close",
@@ -194,4 +205,29 @@ export function t(template: string, vars: Record<string, string | number> = {}):
   return template.replace(/\{(\w+)\}/g, (_, key: string) =>
     key in vars ? String(vars[key]) : `{${key}}`,
   );
+}
+
+/** Join a list of names into a human-readable, localizable supporter string.
+ * Uses the configured list separator and the "{name} ({title})" format when a
+ * title is present, so the rendering stays string-free. */
+export function supportersList(
+  supporters: Array<{ leaderName: string; leaderTitle?: string }>,
+  formatTitle = strings.idea.leaderWithTitle,
+  separator = ", ",
+): string {
+  return supporters
+    .map((s) => (s.leaderTitle ? t(formatTitle, { name: s.leaderName, title: s.leaderTitle }) : s.leaderName))
+    .join(separator);
+}
+
+/** Format a Date into the timeline's date label. The format is described by
+ * `strings.timeline.dateFormat` (a comma-separated list of Intl.DateTimeFormat
+ * option tokens) so it stays editable in one place. */
+export function formatTimelineDate(date: Date, format = strings.timeline.dateFormat): string {
+  const opts: Intl.DateTimeFormatOptions = {};
+  for (const token of format.split(",").map((s) => s.trim())) {
+    const [key, value] = token.split(" ");
+    if (key && value) opts[key as keyof Intl.DateTimeFormatOptions] = value as never;
+  }
+  return date.toLocaleDateString("en-US", opts);
 }

@@ -8,6 +8,7 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { NameSetup } from "@/components/NameSetup";
+import { strings } from "@/lib/strings";
 
 export function ProfileGate({ children }: { children: React.ReactNode }) {
   const { user, initializing } = useAuth();
@@ -16,7 +17,7 @@ export function ProfileGate({ children }: { children: React.ReactNode }) {
   if (initializing) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-muted">
-        …
+        {strings.common.loadingDots}
       </div>
     );
   }
