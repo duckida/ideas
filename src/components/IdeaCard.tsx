@@ -41,7 +41,9 @@ export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: Id
           </span>
           {hasSupport && (
             <span className="text-xs font-medium text-muted">
-              {supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", ")}
+              {t(strings.idea.supportedBy, {
+                name: supports.map((s) => s.leaderTitle ? `${s.leaderName} (${s.leaderTitle})` : s.leaderName).join(", "),
+              })}
             </span>
           )}
           {supportCountOnly && (

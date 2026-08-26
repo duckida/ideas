@@ -49,8 +49,7 @@ describe("IdeaCard", () => {
         onUpvote={vi.fn()}
       />,
     );
-    expect(screen.getByText(/Ms\. Kim \(Digital Leader\)/)).toBeInTheDocument();
-    expect(screen.getByText(/Mr\. Park/)).toBeInTheDocument();
+    expect(screen.getByText(/Supported by Ms\. Kim \(Digital Leader\), Mr\. Park/)).toBeInTheDocument();
   });
 
   it("hides the author when showAuthorName is false", () => {
