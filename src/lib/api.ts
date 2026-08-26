@@ -22,8 +22,8 @@ import {
   arrayRemove,
   increment,
   runTransaction,
+  Timestamp,
   type Firestore,
-  type Timestamp,
 } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import {
@@ -236,12 +236,16 @@ export async function postTimelineUpdate(
   message: string,
   firestore: Firestore = db(),
 ): Promise<void> {
+  // NOTE: serverTimestamp() can only live at the top level of update()/set()
+  // data — it is rejected when nested inside an arrayUnion() element. The
+  // timeline entry embeds a concrete client Timestamp for createdAt; the
+  // surrounding updatedAt still uses the server sentinel.
   const entry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     leaderId: leader.uid,
     leaderName: leader.displayName,
     message,
-    createdAt: serverTimestamp(),
+    createdAt: Timestamp.now(),
   };
   await updateDoc(doc(firestore, "ideas", ideaId), {
     timeline: arrayUnion(entry),

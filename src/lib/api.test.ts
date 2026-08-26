@@ -34,6 +34,7 @@ const firestoreModule = vi.hoisted(() => ({
   arrayUnion: vi.fn((...vals: unknown[]) => ({ __op: "arrayUnion", vals })),
   arrayRemove: vi.fn((...vals: unknown[]) => ({ __op: "arrayRemove", vals })),
   increment: vi.fn((n: number) => ({ __op: "increment", n })),
+  Timestamp: { now: vi.fn(() => ({ __type: "timestamp", seconds: 0, nanoseconds: 0 })) },
 }));
 
 vi.mock("firebase/firestore", () => firestoreModule);
@@ -390,7 +391,7 @@ describe("postTimelineUpdate (embedded in idea doc)", () => {
       leaderId: "u9",
       leaderName: "Ms. Kim",
       message: "Funding secured!",
-      createdAt: { __type: "serverTimestamp" },
+      createdAt: { __type: "timestamp", seconds: 0, nanoseconds: 0 },
     });
     expect(typeof entry.id).toBe("string");
     expect((entry.id as string).length).toBeGreaterThan(0);
