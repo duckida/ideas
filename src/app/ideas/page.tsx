@@ -154,8 +154,8 @@ export default function IdeasPage() {
     <ProtectedRoute>
       <Navbar />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-extrabold text-ink">{strings.ideasHome.heading}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-extrabold text-ink sm:text-2xl">{strings.ideasHome.heading}</h1>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -190,7 +190,7 @@ export default function IdeasPage() {
               <button
                 type="button"
                 onClick={() => handleSort("new")}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-full px-2.5 py-1.5 text-xs font-bold transition sm:px-3 ${
                   sort === "new"
                     ? "bg-ink text-white"
                     : "text-muted hover:bg-background"
@@ -201,7 +201,7 @@ export default function IdeasPage() {
               <button
                 type="button"
                 onClick={() => handleSort("upvotes")}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-full px-2.5 py-1.5 text-xs font-bold transition sm:px-3 ${
                   sort === "upvotes"
                     ? "bg-ink text-white"
                     : "text-muted hover:bg-background"

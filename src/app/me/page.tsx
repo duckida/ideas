@@ -151,7 +151,7 @@ export default function MePage() {
                   {myIdeas.map((idea) => (
                     <li
                       key={idea.id}
-                      className="flex items-center justify-between gap-4 rounded-[1.25rem] border border-line bg-surface p-4"
+                      className="flex flex-col gap-3 rounded-[1.25rem] border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <button
                         type="button"

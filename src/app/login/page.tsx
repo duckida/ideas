@@ -59,7 +59,7 @@ export default function LoginPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md rounded-[1.25rem] border border-line bg-surface p-8 shadow-sm">
+      <div className="w-full max-w-md rounded-[1.25rem] border border-line bg-surface p-6 shadow-sm sm:p-8">
         <h1 className="text-2xl font-extrabold text-ink">
           {t(strings.auth.title, { brand: strings.brand.name })}
         </h1>

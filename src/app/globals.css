@@ -70,3 +70,24 @@ body {
   outline-offset: 2px;
   border-radius: 6px;
 }
+
+/* Hide scrollbar but keep scroll functionality (used on the Navbar tabs) */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent iOS auto-zoom on input focus (requires ≥16px font size) */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

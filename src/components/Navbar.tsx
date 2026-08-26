@@ -51,13 +51,13 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/ideas" className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-5xl items-center gap-2 px-3 py-2 sm:gap-4 sm:px-4 sm:py-3">
+        <Link href="/ideas" className="flex shrink-0 items-center gap-2">
           <span className="inline-block h-6 w-6 rounded-full bg-kakao" />
-          <span className="text-lg font-extrabold text-ink">{strings.brand.name}</span>
+          <span className="hidden text-lg font-extrabold text-ink sm:inline">{strings.brand.name}</span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-none">
           {TABS.filter(
             (tab) => !tab.roles || tab.roles.includes(role as "leader" | "admin"),
           ).map((tab) => {
@@ -68,7 +68,7 @@ export function Navbar() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`relative rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                className={`relative shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold transition ${
                   active
                     ? "bg-kakao-soft text-ink"
                     : "text-muted hover:bg-background hover:text-foreground"
@@ -83,8 +83,8 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <span className="hidden text-sm font-semibold text-ink sm:block">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <span className="hidden text-sm font-semibold text-ink md:block">
             {user?.displayName}
           </span>
 

@@ -148,7 +148,7 @@ export default function AdminPage() {
                 className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 outline-none focus:border-kakao"
               />
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <label className="flex-1">
                 <span className="sr-only">{strings.admin.nameLabel}</span>
                 <input
