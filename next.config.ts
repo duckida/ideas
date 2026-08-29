@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
 import type { NextConfig } from "next";
+import withSimpleAnalytics from "@simpleanalytics/next/plugin";
 
 // Resolve the current git commit so the Settings page can show and link the
 // exact build. Falls back to a manually provided NEXT_PUBLIC_GIT_COMMIT (e.g.
@@ -28,4 +29,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSimpleAnalytics(nextConfig);

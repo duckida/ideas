@@ -5,6 +5,7 @@ import { strings } from "@/lib/strings";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ProfileGate } from "@/components/ProfileGate";
+import { SimpleAnalytics } from "@simpleanalytics/next";
 
 const kakaoBigSans = localFont({
   src: [
@@ -44,6 +45,7 @@ export default function RootLayout({
             <ProfileGate>{children}</ProfileGate>
           </AuthProvider>
         </ThemeProvider>
+        <SimpleAnalytics />
       </body>
     </html>
   );
