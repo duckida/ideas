@@ -16,6 +16,25 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Analytics
+
+This project uses [Simple Analytics](https://simpleanalytics.com/) for privacy-first,
+cookie-less web analytics (no cookie banner required). The [`@simpleanalytics/next`](https://www.npmjs.com/package/@simpleanalytics/next)
+package is wired up as follows:
+
+- `next.config.ts` wraps the config with the `withSimpleAnalytics` plugin, which
+  proxies client-side tracking requests so ad blockers can't interfere.
+- `src/app/layout.tsx` renders the `<SimpleAnalytics />` component, which injects
+  the tracking script and collects pageviews automatically.
+- Set the site's domain (the one shown in the Simple Analytics dashboard) via the
+  `NEXT_PUBLIC_SIMPLE_ANALYTICS_HOSTNAME` / `SIMPLE_ANALYTICS_HOSTNAME` env vars
+  — copy `.env.local.example` to `.env.local` and fill them in.
+
+Optional server-side pageview and event tracking is available through
+`@simpleanalytics/next/server` (`trackPageview`, `trackEvent`), e.g. in Edge
+Middleware, Server Components, Server Actions, and Route Handlers. See the
+package docs for details.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
