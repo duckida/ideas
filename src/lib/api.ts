@@ -340,6 +340,15 @@ export async function getChangesRequestedCount(
   return snap.size;
 }
 
+/** Every idea, regardless of status — used by the admin delete view. */
+export async function getAllIdeas(
+  firestore: Firestore = db(),
+): Promise<Idea[]> {
+  const q = query(collection(firestore, "ideas"), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map(ideaFromSnapshot);
+}
+
 /** All ideas still awaiting moderation — used by /moderation. */
 export async function getPendingIdeas(
   firestore: Firestore = db(),

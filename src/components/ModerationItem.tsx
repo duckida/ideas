@@ -5,7 +5,8 @@
 // to the author.
 
 import { useState } from "react";
-import { moderateIdea, type ModerationAction } from "@/lib/api";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { deleteIdea, moderateIdea, type ModerationAction } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings, t } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
@@ -16,10 +17,23 @@ interface ModerationItemProps {
 }
 
 export function ModerationItem({ idea, onDone }: ModerationItemProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [mode, setMode] = useState<"idle" | "request_changes">("idle");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+
+  async function handleDelete() {
+    if (!isAdmin || busy) return;
+    setBusy(true);
+    try {
+      await deleteIdea(idea.id);
+      setShowDeleteConfirm(false);
+      onDone();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function act(action: ModerationAction, feedback: string) {
     if (!user || busy) return;
@@ -73,6 +87,16 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
           >
             {strings.moderation.requestChanges}
           </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={busy}
+              className="rounded-full border border-danger/40 px-4 py-2 text-sm font-bold text-danger transition hover:bg-danger hover:text-white disabled:opacity-50"
+            >
+              {strings.idea.delete}
+            </button>
+          )}
         </div>
       ) : (
         <form
@@ -109,6 +133,16 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
             </button>
           </div>
         </form>
+      )}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title={strings.idea.deleteConfirm}
+          detail={strings.idea.deleteConfirmDetail}
+          confirmLabel={strings.idea.delete}
+          busy={busy}
+          onConfirm={() => void handleDelete()}
+          onCancel={() => !busy && setShowDeleteConfirm(false)}
+        />
       )}
     </div>
   );

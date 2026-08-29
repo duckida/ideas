@@ -173,6 +173,8 @@ export const strings = {
     invited: "Leader invited (not yet signed up)",
     invitedLabel: "Pending (not signed up yet)",
     activeLabel: "Active leaders",
+    ideasLabel: "All ideas",
+    noIdeas: "No ideas yet.",
   },
 
   leaderboard: {

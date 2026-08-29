@@ -5,6 +5,7 @@
 
 import { useState, type FormEvent, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   setUpvote,
   supportIdea,
@@ -12,6 +13,7 @@ import {
   postTimelineUpdate,
   getIdeaSupports,
   getIdea,
+  deleteIdea,
 } from "@/lib/api";
 import { strings, t, supportersList, formatTimelineDate } from "@/lib/strings";
 import type { Idea } from "@/lib/types";
@@ -30,6 +32,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
   const [busy, setBusy] = useState(false);
   const [post, setPost] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
@@ -108,6 +111,24 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     } catch (err) {
       console.error("Failed to save support", err);
       setActionError(actionErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!isAdmin || busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await deleteIdea(idea.id);
+      setShowDeleteConfirm(false);
+      onClose();
+      onMutated();
+    } catch (err) {
+      console.error("Failed to delete idea", err);
+      setActionError(actionErrorMessage(err));
+      setShowDeleteConfirm(false);
     } finally {
       setBusy(false);
     }
@@ -268,15 +289,36 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
           </button>
         )}
 
-        {/* Close */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-2 w-full rounded-full border border-line px-4 py-2 text-sm font-bold text-muted transition hover:bg-background"
-        >
-          {strings.modal.close}
-        </button>
+        <div className="mt-2 flex gap-2">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={busy}
+              className="rounded-full border border-danger/40 px-4 py-2 text-sm font-bold text-danger transition hover:bg-danger hover:text-white disabled:opacity-50"
+            >
+              {strings.idea.delete}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-full border border-line px-4 py-2 text-sm font-bold text-muted transition hover:bg-background"
+          >
+            {strings.modal.close}
+          </button>
+        </div>
       </div>
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title={strings.idea.deleteConfirm}
+          detail={strings.idea.deleteConfirmDetail}
+          confirmLabel={strings.idea.delete}
+          busy={busy}
+          onConfirm={() => void handleDelete()}
+          onCancel={() => !busy && setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 }

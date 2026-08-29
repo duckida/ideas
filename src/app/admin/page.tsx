@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleGate } from "@/components/ProtectedRoute";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth } from "@/context/AuthContext";
 import {
   getUserByEmail,
@@ -18,19 +19,24 @@ import {
   addInvitedLeader,
   getInvitedLeaders,
   removeInvitedLeader,
+  getAllIdeas,
+  deleteIdea,
 } from "@/lib/api";
 import { strings } from "@/lib/strings";
-import type { InvitedLeader, UserDoc } from "@/lib/types";
+import type { Idea, InvitedLeader, UserDoc } from "@/lib/types";
 
 export default function AdminPage() {
   const auth = useAuth();
   const user = auth.user;
   const [leaders, setLeaders] = useState<UserDoc[]>([]);
   const [invited, setInvited] = useState<InvitedLeader[]>([]);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "ok"; text: string } | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -38,11 +44,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getLeaders(), getInvitedLeaders()])
-      .then(([leaderList, invitedList]) => {
+    Promise.all([getLeaders(), getInvitedLeaders(), getAllIdeas()])
+      .then(([leaderList, invitedList, ideaList]) => {
         if (active) {
           setLeaders(leaderList);
           setInvited(invitedList);
+          setIdeas(ideaList);
         }
       })
       .catch((err) => console.error("Admin: failed to load leaders", err));
@@ -104,6 +111,18 @@ export default function AdminPage() {
     }
   }
 
+  async function handleDeleteIdea() {
+    if (!deletingId || deleteBusy) return;
+    setDeleteBusy(true);
+    try {
+      await deleteIdea(deletingId);
+      setDeletingId(null);
+      refresh();
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
   async function handleRemove(uid: string) {
     if (busy) return;
     setBusy(true);
@@ -136,6 +155,32 @@ export default function AdminPage() {
         <Navbar />
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:py-8">
           <h1 className="text-2xl font-extrabold text-ink">{strings.admin.heading}</h1>
+
+          <section className="mt-6">
+            <h2 className="text-lg font-extrabold text-ink">{strings.admin.ideasLabel}</h2>
+            {ideas.length === 0 ? (
+              <p className="mt-3 text-muted">{strings.admin.noIdeas}</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {ideas.map((idea) => (
+                  <li key={idea.id} className="flex items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-bold text-ink">{idea.title}</p>
+                      <p className="text-xs text-muted">{idea.status} · {idea.authorName}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingId(idea.id)}
+                      disabled={busy || deleteBusy}
+                      className="shrink-0 rounded-full border border-danger/40 px-3 py-1.5 text-xs font-bold text-danger transition hover:bg-danger hover:text-white disabled:opacity-50"
+                    >
+                      {strings.idea.delete}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
           <form onSubmit={handleAdd} className="mt-6 space-y-3">
             <label className="block">
@@ -244,6 +289,17 @@ export default function AdminPage() {
                 </li>
               ))}
             </ul>
+          )}
+
+          {deletingId && (
+            <ConfirmDialog
+              title={strings.idea.deleteConfirm}
+              detail={strings.idea.deleteConfirmDetail}
+              confirmLabel={strings.idea.delete}
+              busy={deleteBusy}
+              onConfirm={() => void handleDeleteIdea()}
+              onCancel={() => !deleteBusy && setDeletingId(null)}
+            />
           )}
         </main>
       </ProtectedRoute>

@@ -136,9 +136,9 @@ service cloud.firestore {
             >= duration.value(minIdeaGapSeconds(), 's')
         );
 
-      // Author can delete their own idea.
+      // Authors can delete their own ideas; admins can remove any idea.
       allow delete: if isSignedIn()
-        && resource.data.authorId == request.auth.uid;
+        && (resource.data.authorId == request.auth.uid || isAdmin());
 
       // Upvotes: any signed-in user may toggle ONLY THEIR OWN entry. The
       // diff guard pins the write to the upvote fields, and the size/count
