@@ -7,6 +7,7 @@ import { useState, type FormEvent } from "react";
 import { createIdea } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
+import { trackIdeaSubmitted } from "@/lib/analytics";
 
 export function SubmitDialog({
   onClose,
@@ -38,6 +39,7 @@ export function SubmitDialog({
         authorEmail: user.email ?? undefined,
         showAuthorName,
       });
+      trackIdeaSubmitted(showAuthorName);
       setStatus("submitted");
       onSubmitted();
     } catch {

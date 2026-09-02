@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { SettingsModal } from "@/components/SettingsModal";
 import { getChangesRequestedCount } from "@/lib/api";
 import { strings } from "@/lib/strings";
+import { trackSignOut } from "@/lib/analytics";
 
 interface Tab {
   href: string;
@@ -102,7 +103,10 @@ export function Navbar() {
 
           <button
             type="button"
-            onClick={() => signOut()}
+            onClick={() => {
+              trackSignOut();
+              signOut();
+            }}
             aria-label={strings.nav.signOut}
             title={strings.nav.signOut}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition hover:bg-background hover:text-foreground"

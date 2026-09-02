@@ -13,6 +13,7 @@ import { SubmitDialog } from "@/components/SubmitDialog";
 import { getApprovedIdeas, getSupportsForIdeas, setUpvote } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
+import { trackIdeaOpen, trackIdeaUpvote, trackIdeasSort, trackIdeasSearchOpen } from "@/lib/analytics";
 import type { Idea, SupportDoc } from "@/lib/types";
 
 export default function IdeasPage() {
@@ -60,6 +61,7 @@ export default function IdeasPage() {
 
       try {
         await setUpvote(idea.id, uid, active);
+        trackIdeaUpvote(active, "card");
       } catch (err) {
         console.error("Failed to save upvote", err);
         // Revert on failure
@@ -123,6 +125,7 @@ export default function IdeasPage() {
   function handleSort(value: "new" | "upvotes") {
     setSort(value);
     localStorage.setItem("ideas_sort", value);
+    trackIdeasSort(value);
   }
 
   const visibleIdeas = useMemo(() => {
@@ -138,6 +141,7 @@ export default function IdeasPage() {
   function toggleSearch() {
     setShowSearch((prev) => {
       if (prev) setQuery("");
+      else trackIdeasSearchOpen();
       return !prev;
     });
   }
@@ -257,7 +261,10 @@ export default function IdeasPage() {
                 idea={idea}
                 supports={supportsMap.get(idea.id) ?? []}
                 currentUserId={user?.uid}
-                onOpen={() => setSelectedId(idea.id)}
+                onOpen={() => {
+                  trackIdeaOpen("card");
+                  setSelectedId(idea.id);
+                }}
                 onUpvote={() => toggleUpvote(idea)}
               />
             ))}

@@ -16,6 +16,13 @@ import {
   deleteIdea,
 } from "@/lib/api";
 import { strings, t, supportersList, formatTimelineDate } from "@/lib/strings";
+import {
+  trackIdeaOpen,
+  trackIdeaUpvote,
+  trackIdeaSupport,
+  trackTimelinePost,
+  trackIdeaDelete,
+} from "@/lib/analytics";
 import type { Idea } from "@/lib/types";
 
 interface IdeaModalProps {
@@ -37,6 +44,8 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
 
   useEffect(() => {
     let active = true;
+    // Count each open of the modal once, not on every refresh tick.
+    trackIdeaOpen("modal");
     Promise.all([getIdea(initialIdea.id), getIdeaSupports(initialIdea.id)])
       .then(([fresh, sup]) => {
         if (!active) return;
@@ -77,6 +86,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     setActionError(null);
     try {
       await setUpvote(idea.id, uid, !hasUpvoted);
+      trackIdeaUpvote(!hasUpvoted, "modal");
       setIdea((prev) => ({
         ...prev,
         upvoteUserIds: hasUpvoted
@@ -101,9 +111,11 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     try {
       if (mySupport) {
         await unsupportIdea(idea.id, uid);
+        trackIdeaSupport(false);
         setSupports((prev) => prev.filter((s) => s.leaderId !== uid));
       } else {
         await supportIdea(idea.id, { uid, displayName: user.displayName, title: user.title });
+        trackIdeaSupport(true);
         setSupports((prev) => [...prev, { leaderId: uid, leaderName: user.displayName, leaderTitle: user.title }]);
       }
       setReloadTick((t) => t + 1);
@@ -122,6 +134,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     setActionError(null);
     try {
       await deleteIdea(idea.id);
+      trackIdeaDelete("modal");
       setShowDeleteConfirm(false);
       onClose();
       onMutated();
@@ -141,6 +154,7 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
     setActionError(null);
     try {
       await postTimelineUpdate(idea.id, { uid: user.uid, displayName: user.displayName }, post.trim());
+      trackTimelinePost();
       setPost("");
       setReloadTick((t) => t + 1);
       onMutated();

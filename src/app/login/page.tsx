@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { signInWithMicrosoft, signInWithEmail } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
 import { strings, t } from "@/lib/strings";
+import { trackSignInMicrosoft, trackSignInEmail } from "@/lib/analytics";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await signInWithMicrosoft();
+      trackSignInMicrosoft();
       router.replace("/ideas");
     } catch {
       setError(strings.auth.genericError);
@@ -49,6 +51,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await signInWithEmail(email, password);
+      trackSignInEmail();
       router.replace("/ideas");
     } catch {
       setError(strings.auth.genericError);

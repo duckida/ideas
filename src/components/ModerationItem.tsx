@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { deleteIdea, moderateIdea, type ModerationAction } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings, t } from "@/lib/strings";
+import { trackModerationApprove, trackModerationChangesRequested, trackModerationDelete } from "@/lib/analytics";
 import type { Idea } from "@/lib/types";
 
 interface ModerationItemProps {
@@ -28,6 +29,7 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
     setBusy(true);
     try {
       await deleteIdea(idea.id);
+      trackModerationDelete();
       setShowDeleteConfirm(false);
       onDone();
     } finally {
@@ -40,6 +42,11 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
     setBusy(true);
     try {
       await moderateIdea(idea.id, action, feedback, user.uid);
+      if (action === "approve") {
+        trackModerationApprove();
+      } else {
+        trackModerationChangesRequested();
+      }
       onDone();
     } finally {
       setBusy(false);
