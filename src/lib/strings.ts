@@ -135,6 +135,7 @@ export const strings = {
     /** Shown to moderators when the author hid their name: "{name} ({anonymous})". */
     anonymousFormat: "{name} ({anonymous})",
     approve: "Approve",
+    reject: "Reject",
     requestChanges: "Request changes",
     feedbackLabel: "Message (shown to the creator)",
     feedbackPlaceholder: "Tell the creator what to change…",

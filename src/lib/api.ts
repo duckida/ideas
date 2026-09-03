@@ -147,11 +147,12 @@ export async function setUpvote(
   });
 }
 
-export type ModerationAction = "approve" | "request_changes";
+export type ModerationAction = "approve" | "request_changes" | "reject";
 
 /**
- * Moderate an idea. `approve` needs no message; `request_changes` attaches
- * `moderationFeedback` that is shown back to the author.
+ * Moderate an idea. `approve` and `reject` need no message;
+ * `request_changes` attaches `moderationFeedback` that is shown back to the
+ * author.
  */
 export async function moderateIdea(
   ideaId: string,
@@ -163,6 +164,15 @@ export async function moderateIdea(
   if (action === "approve") {
     await updateDoc(doc(firestore, "ideas", ideaId), {
       status: "approved",
+      moderatedBy: moderatorId,
+      updatedAt: serverTimestamp(),
+    });
+    return;
+  }
+
+  if (action === "reject") {
+    await updateDoc(doc(firestore, "ideas", ideaId), {
+      status: "rejected",
       moderatedBy: moderatorId,
       updatedAt: serverTimestamp(),
     });

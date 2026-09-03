@@ -95,4 +95,19 @@ describe("ModerationItem", () => {
       expect(api.moderateIdea).toHaveBeenCalledWith("i1", "request_changes", "Add a budget", "mod1"),
     );
   });
+
+  it("rejects an idea immediately", async () => {
+    const user = userEvent.setup();
+    const onDone = vi.fn();
+    render(<ModerationItem idea={pending} onDone={onDone} />);
+
+    await user.click(screen.getByRole("button", { name: "Reject" }));
+
+    await waitFor(() =>
+      expect(api.moderateIdea).toHaveBeenCalledWith("i1", "reject", "", "mod1"),
+    );
+    expect(onDone).toHaveBeenCalled();
+    expect(screen.getByText("Reviewed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();
+  });
 });

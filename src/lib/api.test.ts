@@ -255,6 +255,15 @@ describe("moderateIdea", () => {
       at: { __type: "serverTimestamp" },
     });
   });
+
+  it("reject sets rejected with no feedback", async () => {
+    await moderateIdea("i1", "reject", "", "mod1", db);
+
+    expect(firestoreModule.updateDoc).toHaveBeenCalledWith(
+      ideaDoc("i1"),
+      expect.objectContaining({ status: "rejected" }),
+    );
+  });
 });
 
 describe("supportIdea / unsupportIdea", () => {

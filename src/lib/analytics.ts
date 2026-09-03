@@ -41,6 +41,7 @@ export const ANALYTICS_EVENTS = [
   "signout", // signed out
   "moderation_approve", // a moderator approved a pending idea
   "moderation_changes_requested", // a moderator sent an idea back with feedback
+  "moderation_reject", // a moderator rejected a pending idea
   "moderation_delete", // an admin deleted a pending idea
   "ideas_sort", // the sort order on the ideas grid was changed
   "ideas_search_open", // the search box on the ideas grid was opened
@@ -105,6 +106,11 @@ export function trackModerationApprove() {
 /** moderation_changes_requested — an idea was sent back with feedback. */
 export function trackModerationChangesRequested() {
   saEvent("moderation_changes_requested");
+}
+
+/** moderation_reject — a moderator rejected a pending idea. */
+export function trackModerationReject() {
+  saEvent("moderation_reject");
 }
 
 /** moderation_delete — an admin deleted a pending idea from the queue. */

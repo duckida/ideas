@@ -9,7 +9,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { deleteIdea, moderateIdea, type ModerationAction } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings, t } from "@/lib/strings";
-import { trackModerationApprove, trackModerationChangesRequested, trackModerationDelete } from "@/lib/analytics";
+import { trackModerationApprove, trackModerationChangesRequested, trackModerationDelete, trackModerationReject } from "@/lib/analytics";
 import type { Idea } from "@/lib/types";
 
 interface ModerationItemProps {
@@ -23,6 +23,7 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
   async function handleDelete() {
     if (!isAdmin || busy) return;
@@ -31,6 +32,7 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
       await deleteIdea(idea.id);
       trackModerationDelete();
       setShowDeleteConfirm(false);
+      setDone(true);
       onDone();
     } finally {
       setBusy(false);
@@ -44,21 +46,33 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
       await moderateIdea(idea.id, action, feedback, user.uid);
       if (action === "approve") {
         trackModerationApprove();
+      } else if (action === "reject") {
+        trackModerationReject();
       } else {
         trackModerationChangesRequested();
       }
+      setDone(true);
       onDone();
     } finally {
       setBusy(false);
     }
   }
 
+  const statusLabel =
+    idea.status === "approved"
+      ? strings.idea.statusApproved
+      : idea.status === "changes_requested"
+        ? strings.idea.statusChangesRequested
+        : idea.status === "rejected"
+          ? strings.idea.statusRejected
+          : strings.idea.statusPending;
+
   return (
     <div className="rounded-[1.25rem] border border-line bg-surface p-5">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-lg font-bold text-ink">{idea.title}</h3>
         <span className="shrink-0 rounded-full bg-kakao-soft px-2.5 py-1 text-xs font-bold text-ink">
-          {idea.status === "changes_requested" ? strings.idea.statusChangesRequested : strings.idea.statusPending}
+          {statusLabel}
         </span>
       </div>
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted">
@@ -76,7 +90,9 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
         )}
       </p>
 
-      {mode === "idle" ? (
+      {done ? (
+        <p className="mt-4 text-sm font-semibold text-muted">Reviewed</p>
+      ) : mode === "idle" ? (
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
@@ -85,6 +101,14 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
             className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white transition hover:brightness-95 disabled:opacity-50"
           >
             {strings.moderation.approve}
+          </button>
+          <button
+            type="button"
+            onClick={() => act("reject", "")}
+            disabled={busy}
+            className="rounded-full border border-danger/40 px-4 py-2 text-sm font-bold text-danger transition hover:bg-danger hover:text-white disabled:opacity-50"
+          >
+            {strings.moderation.reject}
           </button>
           <button
             type="button"

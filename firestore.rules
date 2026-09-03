@@ -169,6 +169,7 @@ service cloud.firestore {
       // posts.
       allow update: if isSignedIn() && (
         (resource.data.authorId == request.auth.uid
+          && resource.data.status in ['pending', 'changes_requested']
           && request.resource.data.status in ['pending', 'changes_requested'])
         || isLeader()
       );
