@@ -21,6 +21,7 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
   const { user, isAdmin } = useAuth();
   const [mode, setMode] = useState<"idle" | "request_changes">("idle");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAuthorDetails, setShowAuthorDetails] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -78,17 +79,31 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted">
         {idea.description}
       </p>
-      <p className="mt-2 text-xs font-semibold text-muted">
-        {idea.showAuthorName
-          ? idea.authorName
-          : t(strings.moderation.anonymousFormat, {
-              name: idea.authorName,
-              anonymous: strings.idea.anonymous,
-            })}
-        {idea.showAuthorName && idea.authorEmail && (
-          <span className="ml-2 font-normal text-muted">{idea.authorEmail}</span>
+      <div className="mt-3 flex items-center gap-2 text-xs text-muted">
+        {showAuthorDetails ? (
+          <p className="font-semibold">
+            {idea.showAuthorName
+              ? idea.authorName
+              : t(strings.moderation.anonymousFormat, {
+                  name: idea.authorName,
+                  anonymous: strings.idea.anonymous,
+                })}
+            {idea.authorEmail && (
+              <span className="ml-2 font-normal text-muted">{idea.authorEmail}</span>
+            )}
+          </p>
+        ) : (
+          <span className="font-semibold">{strings.moderation.identityHidden}</span>
         )}
-      </p>
+        <button
+          type="button"
+          onClick={() => setShowAuthorDetails((visible) => !visible)}
+          className="rounded-full border border-line px-2.5 py-1 font-bold text-ink transition hover:bg-background"
+          aria-pressed={showAuthorDetails}
+        >
+          {showAuthorDetails ? strings.moderation.hideIdentity : strings.moderation.revealIdentity}
+        </button>
+      </div>
 
       {done ? (
         <p className="mt-4 text-sm font-semibold text-muted">Reviewed</p>

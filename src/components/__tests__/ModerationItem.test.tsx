@@ -39,35 +39,43 @@ beforeEach(() => {
 });
 
 describe("ModerationItem", () => {
-  it("shows the submitted idea with its author", () => {
-    render(<ModerationItem idea={pending} onDone={vi.fn()} />);
+  it("hides the submitted identity until the moderator reveals it", async () => {
+    const user = userEvent.setup();
+    render(<ModerationItem idea={{ ...pending, authorEmail: "ada@example.com" }} onDone={vi.fn()} />);
+
     expect(screen.getByRole("heading", { name: "Solar benches" })).toBeInTheDocument();
     expect(screen.getByText(/Charge your phone in the sun/)).toBeInTheDocument();
-    expect(screen.getByText("Ada")).toBeInTheDocument();
-  });
+    expect(screen.getByText("Author details hidden")).toBeInTheDocument();
+    expect(screen.queryByText("Ada")).not.toBeInTheDocument();
+    expect(screen.queryByText("ada@example.com")).not.toBeInTheDocument();
 
-  it("shows the real author to moderators even when anonymous", () => {
-    render(<ModerationItem idea={{ ...pending, showAuthorName: false }} onDone={vi.fn()} />);
-    expect(screen.getByText("Ada (Anonymous)")).toBeInTheDocument();
-  });
+    await user.click(screen.getByRole("button", { name: "Reveal" }));
 
-  it("shows the author's email to moderators when the idea is not anonymous", () => {
-    render(
-      <ModerationItem idea={{ ...pending, authorEmail: "ada@example.com" }} onDone={vi.fn()} />,
-    );
     expect(screen.getByText("Ada")).toBeInTheDocument();
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
   });
 
-  it("does not expose the email to moderators when the idea is anonymous", () => {
+  it("reveals the real author to moderators even when anonymous", async () => {
+    const user = userEvent.setup();
+    render(<ModerationItem idea={{ ...pending, showAuthorName: false }} onDone={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Reveal" }));
+
+    expect(screen.getByText("Ada (Anonymous)")).toBeInTheDocument();
+  });
+
+  it("hides an anonymous author's email until reveal", async () => {
+    const user = userEvent.setup();
     render(
       <ModerationItem
         idea={{ ...pending, showAuthorName: false, authorEmail: "ada@example.com" }}
         onDone={vi.fn()}
       />,
     );
-    expect(screen.getByText("Ada (Anonymous)")).toBeInTheDocument();
+
     expect(screen.queryByText("ada@example.com")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reveal" }));
+    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
   });
 
   it("approves immediately without a message", async () => {

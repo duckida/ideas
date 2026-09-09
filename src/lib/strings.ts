@@ -134,6 +134,9 @@ export const strings = {
     empty: "Nothing to review yet :D",
     /** Shown to moderators when the author hid their name: "{name} ({anonymous})". */
     anonymousFormat: "{name} ({anonymous})",
+    identityHidden: "Author details hidden",
+    revealIdentity: "Reveal",
+    hideIdentity: "Hide",
     approve: "Approve",
     reject: "Reject",
     requestChanges: "Request changes",
