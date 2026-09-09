@@ -468,8 +468,12 @@ export async function getIdea(
   return snap.exists() ? ideaFromSnapshot(snap) : null;
 }
 
-/** The home feed — only approved standalone ideas (topic responses live on
- * their topic's card + page instead), sorted by newest or most upvotes. */
+/** The home feed — only approved standalone ideas, sorted by newest or most
+ * upvotes. Topic responses are filtered out client-side, NOT with a
+ * `topicId == null` where-clause: composite indexes skip documents that are
+ * missing an indexed field, so ideas created before question mode would
+ * silently vanish from the feed (and the query would need an extra index
+ * that doesn't exist in production). */
 export async function getApprovedIdeas(
   sort: "new" | "upvotes" = "new",
   firestore: Firestore = db(),
@@ -477,13 +481,12 @@ export async function getApprovedIdeas(
   const q = query(
     collection(firestore, "ideas"),
     where("status", "==", "approved"),
-    // `== null` also matches docs where the field is missing (ideas created
-    // before question mode), so legacy ideas stay in the feed.
-    where("topicId", "==", null),
     orderBy(sort === "upvotes" ? "upvoteCount" : "createdAt", "desc"),
   );
   const snap = await getDocs(q);
-  return snap.docs.map(ideaFromSnapshot);
+  return snap.docs
+    .map(ideaFromSnapshot)
+    .filter((idea) => !idea.topicId);
 }
 
 /** The idea the given author submitted (any status) — used by /me. */

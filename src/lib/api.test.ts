@@ -189,31 +189,45 @@ describe("createIdea (rate-limited)", () => {
 });
 
 describe("getApprovedIdeas (home feed sort)", () => {
-  it("orders standalone approved ideas by createdAt desc for the 'new' sort", async () => {
+  it("orders approved ideas by createdAt desc for the 'new' sort", async () => {
     firestoreModule.getDocs.mockResolvedValue({ docs: [] });
 
     await getApprovedIdeas("new", db);
 
-    // Topic responses are excluded from the main feed (== null also matches
-    // docs missing the field, i.e. pre-question-mode ideas).
     expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
-    expect(firestoreModule.where).toHaveBeenCalledWith("topicId", "==", null);
     expect(firestoreModule.orderBy).toHaveBeenCalledWith("createdAt", "desc");
-    // Requires the composite index (status ASC, topicId ASC, createdAt DESC).
+    // No topicId filter: legacy ideas (field missing) must stay in the feed,
+    // and composite indexes skip docs missing an indexed field — so the
+    // topic split happens client-side instead.
+    expect(firestoreModule.where).not.toHaveBeenCalledWith("topicId", "==", null);
     expect(firestoreModule.getDocs).toHaveBeenCalledTimes(1);
   });
 
-  it("orders standalone approved ideas by upvoteCount desc for the 'upvotes' sort", async () => {
+  it("orders approved ideas by upvoteCount desc for the 'upvotes' sort", async () => {
     firestoreModule.getDocs.mockResolvedValue({ docs: [] });
 
     await getApprovedIdeas("upvotes", db);
 
     expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
-    expect(firestoreModule.where).toHaveBeenCalledWith("topicId", "==", null);
-    // Requires the composite index (status ASC, topicId ASC, upvoteCount
-    // DESC) — declared in firestore.indexes.json and guarded by
-    // src/lib/indexes.test.ts.
+    expect(firestoreModule.where).not.toHaveBeenCalledWith("topicId", "==", null);
     expect(firestoreModule.orderBy).toHaveBeenCalledWith("upvoteCount", "desc");
+  });
+
+  it("filters topic responses out of the main feed but keeps legacy ideas", async () => {
+    // i1: legacy idea (topicId missing entirely — pre question mode).
+    // i2: standalone new idea (topicId explicitly null).
+    // i3: topic response.
+    firestoreModule.getDocs.mockResolvedValueOnce({
+      docs: [
+        { id: "i1", data: () => ({ title: "Legacy", status: "approved" }) },
+        { id: "i2", data: () => ({ title: "New", status: "approved", topicId: null }) },
+        { id: "i3", data: () => ({ title: "Response", status: "approved", topicId: "t1" }) },
+      ],
+    });
+
+    const list = await getApprovedIdeas("new", db);
+
+    expect(list.map((i) => i.id)).toEqual(["i1", "i2"]);
   });
 });
 

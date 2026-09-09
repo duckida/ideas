@@ -78,8 +78,8 @@ keep their denormalised `topicQuestion`, so nothing is orphaned).
 The ideas page shows one card per approved topic, each with a preview row of
 its approved responses and a link to the topic's own page (`/topics/{id}`)
 listing all of them. Topic responses are excluded from the main ideas feed
-(`topicId == null` also matches docs missing the field, i.e. ideas created
-before question mode).
+client-side (NOT with a `topicId == null` query — composite indexes skip
+docs missing the field, so pre-question-mode ideas would vanish).
 
 ## invitedLeaders / {email}
 
@@ -118,8 +118,8 @@ Document ID = normalised email (case-insensitive dedup).
 
 - `ideas`: `status ASC, createdAt ASC` — moderation queue
 - `ideas`: `authorId ASC, createdAt DESC` — "my ideas"
-- `ideas`: `status ASC, topicId ASC, createdAt DESC` — main feed (standalone ideas only)
-- `ideas`: `status ASC, topicId ASC, upvoteCount DESC` — main feed by upvotes
+- `ideas`: `status ASC, createdAt DESC` — main feed by newest
+- `ideas`: `status ASC, upvoteCount DESC` — main feed by upvotes
 - `ideas`: `topicId ASC, status ASC, createdAt DESC` — a topic's responses
 - `supports`: `leaderId ASC, createdAt DESC` — a leader's supported ideas
 - `topics`: `status ASC, createdAt DESC` — live topics
@@ -130,7 +130,7 @@ Document ID = normalised email (case-insensitive dedup).
 
 | page        | query                                            |
 | ----------- | ------------------------------------------------ |
-| `/ideas`    | `ideas` where `status == approved` and `topicId == null` order `createdAt desc` (or `upvoteCount desc`); one batched `supports` read per ≤30 ideas (`ideaId in […]`) for the badge; `topics` where `status == approved` order `createdAt desc`; per topic a capped `ideas` where `topicId == t` and `status == approved` order `createdAt desc` limit 4 preview |
+| `/ideas`    | `ideas` where `status == approved` order `createdAt desc` (or `upvoteCount desc`), topic responses filtered out client-side; one batched `supports` read per ≤30 ideas (`ideaId in […]`) for the badge; `topics` where `status == approved` order `createdAt desc`; per topic a capped `ideas` where `topicId == t` and `status == approved` order `createdAt desc` limit 4 preview |
 | `/topics/[id]` | `topics/{id}`; `ideas` where `topicId == id` and `status == approved` order `createdAt desc`; batched `supports` for the badges |
 | `/moderation` | `ideas` where `status == pending` order `createdAt asc` (own submissions hidden); `topics` where `status == pending` order `createdAt asc` (own topics hidden) |
 | `/me`       | `ideas` where `authorId == me`; `supports` where `leaderId == me` → `getIdea` each; `topics` where `authorId == me` (leaders) |

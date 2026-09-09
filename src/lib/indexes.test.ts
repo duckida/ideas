@@ -31,17 +31,17 @@ interface QuerySpec {
 
 const specs: QuerySpec[] = [
   {
-    name: "getApprovedIdeas('new') — ideas feed (standalone only) sorted by newest",
+    name: "getApprovedIdeas('new') — ideas feed sorted by newest (topic responses filtered client-side)",
     collectionGroup: "ideas",
     queryScope: "COLLECTION",
-    eqFields: ["status", "topicId"],
+    eqFields: ["status"],
     orderBy: [["createdAt", "DESCENDING"]],
   },
   {
-    name: "getApprovedIdeas('upvotes') — ideas feed (standalone only) sorted by most upvotes",
+    name: "getApprovedIdeas('upvotes') — ideas feed sorted by most upvotes (topic responses filtered client-side)",
     collectionGroup: "ideas",
     queryScope: "COLLECTION",
-    eqFields: ["status", "topicId"],
+    eqFields: ["status"],
     orderBy: [["upvoteCount", "DESCENDING"]],
   },
   {
