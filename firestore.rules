@@ -25,9 +25,8 @@ function minIdeaGapSeconds() { return 10; }
 
 // At most this many pending ideas per author at once. NOTE: rules cannot
 // query collections, so this is enforced client-side atomically in
-// createIdea() (see src/lib/api.ts) and mirrored here as documentation.
-// (sync: src/lib/defs.ts MAX_PENDING_PER_AUTHOR)
-function maxPendingPerAuthor() { return 5; }
+// createIdea() (see src/lib/api.ts).
+// (sync: src/lib/defs.ts MAX_PENDING_PER_AUTHOR — value: 5)
 
 // Longest author-name label on an idea. We only cap the length, not compare
 // it to users/{uid}.displayName, since display names drift (edits, provider
