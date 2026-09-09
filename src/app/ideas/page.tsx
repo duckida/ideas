@@ -10,19 +10,24 @@ import { IdeaCard } from "@/components/IdeaCard";
 import { IdeaModal } from "@/components/IdeaModal";
 import { FabAdd } from "@/components/FabAdd";
 import { SubmitDialog } from "@/components/SubmitDialog";
-import { getApprovedIdeas, getSupportsForIdeas, setUpvote } from "@/lib/api";
+import { getApprovedIdeas, getSupportsForIdeas, setUpvote, getActiveTopic } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
 import { trackIdeaOpen, trackIdeaUpvote, trackIdeasSort, trackIdeasSearchOpen } from "@/lib/analytics";
-import type { Idea, SupportDoc } from "@/lib/types";
+import { TopicBox } from "@/components/TopicBox";
+import { TopicSubmitDialog } from "@/components/TopicSubmitDialog";
+import type { Idea, SupportDoc, Topic } from "@/lib/types";
 
 export default function IdeasPage() {
-  const { user } = useAuth();
+  const { user, isLeader } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [supportsMap, setSupportsMap] = useState<Map<string, SupportDoc[]>>(new Map());
   const [supportersError, setSupportersError] = useState(false);
+  const [topic, setTopic] = useState<Topic | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSubmit, setShowSubmit] = useState(false);
+  const [showTopicSubmit, setShowTopicSubmit] = useState(false);
+  const [respondToTopic, setRespondToTopic] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
@@ -82,6 +87,18 @@ export default function IdeasPage() {
     },
     [user],
   );
+
+  useEffect(() => {
+    let active = true;
+    getActiveTopic()
+      .then((topic) => {
+        if (active) setTopic(topic);
+      })
+      .catch((err) => console.error("Failed to load active topic", err));
+    return () => {
+      active = false;
+    };
+  }, [tick]);
 
   useEffect(() => {
     let active = true;
@@ -217,6 +234,14 @@ export default function IdeasPage() {
           </div>
         </div>
 
+        {/* Question mode: the topic (question) the leaders set */}
+        <TopicBox
+          topic={topic}
+          canSetTopic={isLeader}
+          onRespond={() => setRespondToTopic(true)}
+          onNewTopic={() => setShowTopicSubmit(true)}
+        />
+
         {showSearch && (
           <div className="mt-4">
             <input
@@ -278,6 +303,19 @@ export default function IdeasPage() {
         <IdeaModal idea={selected} onClose={() => setSelectedId(null)} onMutated={refresh} />
       )}
       {showSubmit && <SubmitDialog onClose={() => setShowSubmit(false)} onSubmitted={refresh} />}
+      {respondToTopic && topic && (
+        <SubmitDialog
+          topic={topic}
+          onClose={() => setRespondToTopic(false)}
+          onSubmitted={refresh}
+        />
+      )}
+      {showTopicSubmit && (
+        <TopicSubmitDialog
+          onClose={() => setShowTopicSubmit(false)}
+          onSubmitted={refresh}
+        />
+      )}
     </ProtectedRoute>
   );
 }

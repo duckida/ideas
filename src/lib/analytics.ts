@@ -45,6 +45,8 @@ export const ANALYTICS_EVENTS = [
   "moderation_delete", // an admin deleted a pending idea
   "ideas_sort", // the sort order on the ideas grid was changed
   "ideas_search_open", // the search box on the ideas grid was opened
+  "topic_submitted", // a leader submitted a topic for moderation
+  "topic_responded", // a student responded to the live topic
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
@@ -126,4 +128,14 @@ export function trackIdeasSort(value: "new" | "upvotes") {
 /** ideas_search_open — the search box was toggled open. */
 export function trackIdeasSearchOpen() {
   saEvent("ideas_search_open");
+}
+
+/** topic_submitted — a leader sent a topic to moderation. */
+export function trackTopicSubmitted() {
+  saEvent("topic_submitted");
+}
+
+/** topic_responded — someone responded to the live topic. */
+export function trackTopicResponded() {
+  saEvent("topic_responded");
 }

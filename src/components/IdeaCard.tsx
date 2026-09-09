@@ -28,6 +28,12 @@ export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: Id
     >
       <h3 className="text-lg font-bold leading-snug text-ink">{idea.title}</h3>
 
+      {idea.topicQuestion && (
+        <span className="w-fit rounded-full bg-kakao-soft px-2.5 py-1 text-xs font-bold text-ink">
+          {t(strings.idea.topicBadge, { question: idea.topicQuestion })}
+        </span>
+      )}
+
       <p className="line-clamp-3 text-sm leading-relaxed text-muted">
         {idea.description}
       </p>

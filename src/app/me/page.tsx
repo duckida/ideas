@@ -9,15 +9,16 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { IdeaModal } from "@/components/IdeaModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EditIdeaDialog } from "@/components/EditIdeaDialog";
-import { getIdeasByAuthor, getLeaderSupports, getIdea, deleteIdea, updateUserTitle } from "@/lib/api";
+import { getIdeasByAuthor, getLeaderSupports, getIdea, deleteIdea, updateUserTitle, getTopicsByAuthor } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { strings } from "@/lib/strings";
-import type { Idea } from "@/lib/types";
+import { strings, t } from "@/lib/strings";
+import type { Idea, Topic } from "@/lib/types";
 
 export default function MePage() {
   const { user, isLeader, refreshUser } = useAuth();
   const [myIdeas, setMyIdeas] = useState<Idea[]>([]);
   const [supported, setSupported] = useState<Idea[]>([]);
+  const [myTopics, setMyTopics] = useState<Topic[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -37,10 +38,12 @@ export default function MePage() {
     Promise.all([
       getIdeasByAuthor(user.uid),
       isLeader ? getLeaderSupports(user.uid) : Promise.resolve([]),
+      isLeader ? getTopicsByAuthor(user.uid) : Promise.resolve([]),
     ])
-      .then(async ([mine, supports]) => {
+      .then(async ([mine, supports, topics]) => {
         if (!active) return;
         setMyIdeas(mine);
+        setMyTopics(topics);
         if (supports.length > 0) {
           const ideas = await Promise.all(
             supports.map((s) => getIdea(s.ideaId)),
@@ -159,6 +162,11 @@ export default function MePage() {
                         className="flex-1 text-left"
                       >
                         <p className="font-bold text-ink">{idea.title}</p>
+                        {idea.topicQuestion && (
+                          <p className="mt-0.5 text-xs font-semibold text-muted">
+                            {t(strings.idea.topicBadge, { question: idea.topicQuestion })}
+                          </p>
+                        )}
                         <p className="mt-0.5 text-xs font-semibold text-muted">
                           {strings.idea.statusLabel}:{" "}
                           {idea.status === "pending" && strings.idea.statusPending}
@@ -194,6 +202,35 @@ export default function MePage() {
                 </ul>
               )}
             </section>
+
+            {/* My topics (leaders only) */}
+            {isLeader && (
+              <section>
+                <h2 className="text-lg font-extrabold text-ink">{strings.topic.myTopics}</h2>
+                {myTopics.length === 0 ? (
+                  <p className="mt-3 text-muted">{strings.topic.myTopicsEmpty}</p>
+                ) : (
+                  <ul className="mt-4 space-y-3">
+                    {myTopics.map((topic) => (
+                      <li
+                        key={topic.id}
+                        className="rounded-[1.25rem] border border-line bg-surface p-4"
+                      >
+                        <p className="font-bold text-ink">{topic.question}</p>
+                        <p className="mt-0.5 text-xs font-semibold text-muted">
+                          {strings.idea.statusLabel}:{" "}
+                          {topic.status === "pending" && strings.idea.statusPending}
+                          {topic.status === "approved" && strings.idea.statusApproved}
+                          {topic.status === "rejected" && strings.idea.statusRejected}
+                          {topic.status === "changes_requested" &&
+                            strings.idea.statusChangesRequested}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
 
             {/* Supported ideas (leaders only) */}
             {isLeader && (

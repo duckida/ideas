@@ -39,6 +39,10 @@ function maxAuthorNameLength() { return 120; }
 // (sync: src/lib/defs.ts MAX_DISPLAY_NAME_LENGTH)
 function maxDisplayNameLength() { return 120; }
 
+// Longest allowed topic (question) text a leader can set.
+// (sync: src/lib/defs.ts MAX_TOPIC_LENGTH)
+function maxTopicLength() { return 200; }
+
 // Field on users/{uid} storing the last idea-submission timestamp.
 // (sync: src/lib/defs.ts LAST_IDEA_AT_FIELD)
 function lastIdeaAtField() { return 'lastIdeaAt'; }
@@ -122,11 +126,28 @@ service cloud.firestore {
         && request.resource.data.upvoteCount == 0
         && request.resource.data.supportCount == 0
         && request.resource.data.showAuthorName is bool
+        && (
+          // Topic responses: the topic must exist, already be approved, and
+          // the denormalized question label must match it. Regular ideas
+          // carry null for both fields.
+          (
+            request.resource.data.topicId == null
+            && request.resource.data.topicQuestion == null
+          )
+          || (
+            request.resource.data.topicId is string
+            && request.resource.data.topicQuestion is string
+            && request.resource.data.topicQuestion.size() <= maxTopicLength()
+            && get(/databases/$(database)/documents/topics/$(request.resource.data.topicId)).data.status == 'approved'
+            && request.resource.data.topicQuestion
+              == get(/databases/$(database)/documents/topics/$(request.resource.data.topicId)).data.question
+          )
+        )
         && request.resource.data.keys().hasOnly([
             'title', 'description', 'status', 'authorId', 'authorName',
             'authorTitle', 'authorEmail', 'upvoteUserIds', 'upvoteCount',
-            'supportCount', 'showAuthorName', 'moderationFeedback', 'timeline',
-            'createdAt', 'updatedAt',
+            'supportCount', 'showAuthorName', 'topicId', 'topicQuestion',
+            'moderationFeedback', 'timeline', 'createdAt', 'updatedAt',
           ])
         // Rate window: at most one idea submitted every N seconds.
         && (
@@ -165,14 +186,60 @@ service cloud.firestore {
 
       // Authors may update their own pending or changes_requested ideas;
       // leaders/admins moderate.
-      // Leaders also mutate `supportCount`/`timeline` via support + timeline
-      // posts.
       allow update: if isSignedIn() && (
-        (resource.data.authorId == request.auth.uid
+        resource.data.authorId == request.auth.uid
           && resource.data.status in ['pending', 'changes_requested']
-          && request.resource.data.status in ['pending', 'changes_requested'])
-        || isLeader()
+          && request.resource.data.status in ['pending', 'changes_requested']
+        // Moderation: a leader/admin may moderate any idea EXCEPT their own —
+        // self-moderation is blocked, so another moderator must review it.
+        // (Admins can still delete any idea via the delete rule above.)
+        || (
+          isLeader()
+          && resource.data.authorId != request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'moderationFeedback', 'moderatedBy', 'updatedAt'])
+        )
+        // Support & timeline: leaders may back and comment on any idea,
+        // including their own.
+        || (
+          isLeader()
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['supportCount', 'timeline', 'updatedAt'])
+        )
       );
+    }
+
+    // ---- topics (question mode) ----
+    // A topic is a question a leader sets (e.g. "What do you think of the
+    // timetable changes?"). Students respond with ideas that carry topicId.
+    // Topics are moderated like ideas — but never by their own author.
+    match /topics/{topicId} {
+      allow read: if isSignedIn();
+
+      // Leaders/admins submit; every new topic starts pending.
+      allow create: if isLeader()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName.size() > 0
+        && request.resource.data.authorName.size() <= maxDisplayNameLength()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.question.size() > 0
+        && request.resource.data.question.size() <= maxTopicLength()
+        && request.resource.data.moderatedBy == null
+        && request.resource.data.keys().hasOnly([
+            'question', 'status', 'authorId', 'authorName', 'moderatedBy',
+            'createdAt', 'updatedAt',
+          ]);
+
+      // Moderation: approve or reject — never your own topic.
+      allow update: if isLeader()
+        && resource.data.authorId != request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'moderatedBy', 'updatedAt'])
+        && request.resource.data.status in ['approved', 'rejected'];
+
+      // Admins may delete topics (responses keep their denormalized
+      // topicQuestion, so nothing is orphaned).
+      allow delete: if isAdmin();
     }
 
     // ---- supports (leader endorsements) ----

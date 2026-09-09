@@ -21,9 +21,11 @@ import {
   removeInvitedLeader,
   getAllIdeas,
   deleteIdea,
+  getAllTopics,
+  deleteTopic,
 } from "@/lib/api";
 import { strings } from "@/lib/strings";
-import type { Idea, InvitedLeader, UserDoc } from "@/lib/types";
+import type { Idea, InvitedLeader, Topic, UserDoc } from "@/lib/types";
 
 export default function AdminPage() {
   const auth = useAuth();
@@ -31,7 +33,9 @@ export default function AdminPage() {
   const [leaders, setLeaders] = useState<UserDoc[]>([]);
   const [invited, setInvited] = useState<InvitedLeader[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingTopicId, setDeletingTopicId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [title, setTitle] = useState("");
@@ -44,12 +48,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getLeaders(), getInvitedLeaders(), getAllIdeas()])
-      .then(([leaderList, invitedList, ideaList]) => {
+    Promise.all([getLeaders(), getInvitedLeaders(), getAllIdeas(), getAllTopics()])
+      .then(([leaderList, invitedList, ideaList, topicList]) => {
         if (active) {
           setLeaders(leaderList);
           setInvited(invitedList);
           setIdeas(ideaList);
+          setTopics(topicList);
         }
       })
       .catch((err) => console.error("Admin: failed to load leaders", err));
@@ -123,6 +128,18 @@ export default function AdminPage() {
     }
   }
 
+  async function handleDeleteTopic() {
+    if (!deletingTopicId || deleteBusy) return;
+    setDeleteBusy(true);
+    try {
+      await deleteTopic(deletingTopicId);
+      setDeletingTopicId(null);
+      refresh();
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
   async function handleRemove(uid: string) {
     if (busy) return;
     setBusy(true);
@@ -155,6 +172,33 @@ export default function AdminPage() {
         <Navbar />
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:py-8">
           <h1 className="text-2xl font-extrabold text-ink">{strings.admin.heading}</h1>
+
+          {/* Topics (question mode) */}
+          <section className="mt-6">
+            <h2 className="text-lg font-extrabold text-ink">{strings.topic.adminHeading}</h2>
+            {topics.length === 0 ? (
+              <p className="mt-3 text-muted">{strings.topic.adminEmpty}</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {topics.map((topic) => (
+                  <li key={topic.id} className="flex items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-bold text-ink">{topic.question}</p>
+                      <p className="text-xs text-muted">{topic.status} · {topic.authorName}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingTopicId(topic.id)}
+                      disabled={busy || deleteBusy}
+                      className="shrink-0 rounded-full border border-danger/40 px-3 py-1.5 text-xs font-bold text-danger transition hover:bg-danger hover:text-white disabled:opacity-50"
+                    >
+                      {strings.topic.delete}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
           <section className="mt-6">
             <h2 className="text-lg font-extrabold text-ink">{strings.admin.ideasLabel}</h2>
@@ -299,6 +343,17 @@ export default function AdminPage() {
               busy={deleteBusy}
               onConfirm={() => void handleDeleteIdea()}
               onCancel={() => !deleteBusy && setDeletingId(null)}
+            />
+          )}
+
+          {deletingTopicId && (
+            <ConfirmDialog
+              title={strings.topic.deleteConfirm}
+              detail={strings.topic.deleteConfirmDetail}
+              confirmLabel={strings.topic.delete}
+              busy={deleteBusy}
+              onConfirm={() => void handleDeleteTopic()}
+              onCancel={() => !deleteBusy && setDeletingTopicId(null)}
             />
           )}
         </main>

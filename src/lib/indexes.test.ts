@@ -65,6 +65,27 @@ const specs: QuerySpec[] = [
     eqFields: ["leaderId"],
     orderBy: [["createdAt", "DESCENDING"]],
   },
+  {
+    name: "getActiveTopic — latest approved topic for the ideas page box",
+    collectionGroup: "topics",
+    queryScope: "COLLECTION",
+    eqFields: ["status"],
+    orderBy: [["createdAt", "DESCENDING"]],
+  },
+  {
+    name: "getPendingTopics — topic moderation queue",
+    collectionGroup: "topics",
+    queryScope: "COLLECTION",
+    eqFields: ["status"],
+    orderBy: [["createdAt", "ASCENDING"]],
+  },
+  {
+    name: "getTopicsByAuthor — /me topic list",
+    collectionGroup: "topics",
+    queryScope: "COLLECTION",
+    eqFields: ["authorId"],
+    orderBy: [["createdAt", "DESCENDING"]],
+  },
 ];
 
 const config = JSON.parse(

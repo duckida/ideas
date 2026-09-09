@@ -39,8 +39,10 @@ import {
   type IdeaStatus,
   type Role,
   type SupportDoc,
+  type Topic,
   type UserDoc,
 } from "@/lib/types";
+import { MAX_TOPIC_LENGTH } from "@/lib/defs";
 
 function db(): Firestore {
   return getFirestore(getFirebaseApp());
@@ -55,6 +57,8 @@ export interface NewIdeaInput {
   showAuthorName: boolean;
   /** Denormalized author email (stored when the idea is not anonymous). */
   authorEmail?: string;
+  /** When set, the idea is a response to this topic (the topic box flow). */
+  topic?: { id: string; question: string };
 }
 
 export interface IdeaLimits {
@@ -120,6 +124,8 @@ export async function createIdea(
       authorTitle: input.authorTitle ?? null,
       authorEmail: input.authorEmail ?? null,
       showAuthorName: input.showAuthorName,
+      topicId: input.topic?.id ?? null,
+      topicQuestion: input.topic?.question ?? null,
       upvoteUserIds: [],
       upvoteCount: 0,
       supportCount: 0,
@@ -236,6 +242,133 @@ export async function unsupportIdea(
   });
 }
 
+// ---- Topics (question mode) ----
+
+export interface NewTopicInput {
+  question: string;
+  authorId: string;
+  authorName: string;
+}
+
+/** A leader submits a topic (question). Like ideas, it starts in `pending`
+ * and must be approved by ANOTHER moderator before it appears in the topic
+ * box — firestore.rules reject a moderator moderating their own topic. */
+export async function createTopic(
+  input: NewTopicInput,
+  firestore: Firestore = db(),
+): Promise<string> {
+  const question = input.question.trim();
+  if (question.length === 0 || question.length > MAX_TOPIC_LENGTH) {
+    throw new Error("topic_invalid_length");
+  }
+  const ref = doc(collection(firestore, "topics"));
+  await setDoc(ref, {
+    question,
+    status: "pending",
+    authorId: input.authorId,
+    authorName: input.authorName,
+    moderatedBy: null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export type TopicModerationAction = "approve" | "reject";
+
+/** Moderate a topic — approve (goes live in the topic box) or reject.
+ * Request-changes is deliberately not offered: leaders cannot resubmit a
+ * topic, so that state would be a dead end. */
+export async function moderateTopic(
+  topicId: string,
+  action: TopicModerationAction,
+  moderatorId: string,
+  firestore: Firestore = db(),
+): Promise<void> {
+  await updateDoc(doc(firestore, "topics", topicId), {
+    status: action === "approve" ? "approved" : "rejected",
+    moderatedBy: moderatorId,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** Delete a topic — admins only (enforced by firestore.rules). Responses
+ * keep their denormalized topicQuestion, so nothing else needs cleaning. */
+export async function deleteTopic(
+  topicId: string,
+  firestore: Firestore = db(),
+): Promise<void> {
+  await deleteDoc(doc(firestore, "topics", topicId));
+}
+
+function topicFromSnapshot(snap: {
+  id: string;
+  data: () => Record<string, unknown>;
+}): Topic {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    question: String(d.question ?? ""),
+    status: (d.status as IdeaStatus) ?? "pending",
+    authorId: String(d.authorId ?? ""),
+    authorName: String(d.authorName ?? ""),
+    moderatedBy: d.moderatedBy ? String(d.moderatedBy) : undefined,
+    createdAt: (d.createdAt as Topic["createdAt"]) ?? null,
+    updatedAt: (d.updatedAt as Topic["updatedAt"]) ?? null,
+  };
+}
+
+/** The live topic shown in the box on the ideas page — the most recently
+ * approved one. */
+export async function getActiveTopic(
+  firestore: Firestore = db(),
+): Promise<Topic | null> {
+  const q = query(
+    collection(firestore, "topics"),
+    where("status", "==", "approved"),
+    orderBy("createdAt", "desc"),
+    limit(1),
+  );
+  const snap = await getDocs(q);
+  return snap.docs[0] ? topicFromSnapshot(snap.docs[0]) : null;
+}
+
+/** Topics awaiting review — used by /moderation. */
+export async function getPendingTopics(
+  firestore: Firestore = db(),
+): Promise<Topic[]> {
+  const q = query(
+    collection(firestore, "topics"),
+    where("status", "==", "pending"),
+    orderBy("createdAt", "asc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(topicFromSnapshot);
+}
+
+/** Topics the given leader submitted (any status) — used by /me. */
+export async function getTopicsByAuthor(
+  authorId: string,
+  firestore: Firestore = db(),
+): Promise<Topic[]> {
+  const q = query(
+    collection(firestore, "topics"),
+    where("authorId", "==", authorId),
+    orderBy("createdAt", "desc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(topicFromSnapshot);
+}
+
+/** Every topic, regardless of status — used by the admin delete view. */
+export async function getAllTopics(
+  firestore: Firestore = db(),
+): Promise<Topic[]> {
+  const q = query(collection(firestore, "topics"), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map(topicFromSnapshot);
+}
+
 /**
  * Post a leader timeline update on an idea. Entries are embedded in the idea
  * document (arrayUnion) so the modal's Timeline tab reads them in one fetch.
@@ -291,6 +424,8 @@ function ideaFromSnapshot(snap: {
     upvoteCount: Number(d.upvoteCount ?? 0),
     supportCount: Number(d.supportCount ?? 0),
     showAuthorName: d.showAuthorName !== false,
+    topicId: d.topicId ? String(d.topicId) : undefined,
+    topicQuestion: d.topicQuestion ? String(d.topicQuestion) : undefined,
     moderationFeedback: (d.moderationFeedback as Idea["moderationFeedback"]) ?? null,
     moderatedBy: d.moderatedBy ? String(d.moderatedBy) : undefined,
     timeline: Array.isArray(d.timeline) ? (d.timeline as Idea["timeline"]) : [],

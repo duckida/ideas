@@ -9,9 +9,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute, RoleGate } from "@/components/ProtectedRoute";
 import { ModerationItem } from "@/components/ModerationItem";
-import { getPendingIdeas, getModeratedIdeas, getLeaders } from "@/lib/api";
+import { TopicModerationItem } from "@/components/TopicModerationItem";
+import { getPendingIdeas, getModeratedIdeas, getLeaders, getPendingTopics } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
-import type { Idea } from "@/lib/types";
+import type { Idea, Topic } from "@/lib/types";
 
 interface LeaderStats {
   uid: string;
@@ -22,7 +24,9 @@ interface LeaderStats {
 }
 
 export default function ModerationPage() {
+  const { user } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
   const [stats, setStats] = useState<LeaderStats[]>([]);
@@ -30,11 +34,19 @@ export default function ModerationPage() {
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
+  // A moderator never reviews their own submission — those are hidden from
+  // this queue (and firestore.rules reject the write anyway).
+  const ownHidden =
+    ideas.some((i) => i.authorId === user?.uid) ||
+    topics.some((tp) => tp.authorId === user?.uid);
+
   useEffect(() => {
     let active = true;
-    getPendingIdeas()
-      .then((list) => {
-        if (active) setIdeas(list);
+    Promise.all([getPendingIdeas(), getPendingTopics()])
+      .then(([ideaList, topicList]) => {
+        if (!active) return;
+        setIdeas(ideaList);
+        setTopics(topicList);
       })
       .catch((err) => console.error("Moderation: failed to load queue", err))
       .finally(() => {
@@ -89,16 +101,49 @@ export default function ModerationPage() {
 
           {loading ? (
             <p className="mt-8 text-muted">{strings.common.loading}</p>
-          ) : ideas.length === 0 ? (
-            <p className="mt-8 text-muted">{strings.moderation.empty}</p>
           ) : (
-            <ul className="mt-6 space-y-4">
-              {ideas.map((idea) => (
-                <li key={idea.id}>
-                  <ModerationItem idea={idea} onDone={refresh} />
-                </li>
-              ))}
-            </ul>
+            <>
+              {/* Topics awaiting review */}
+              <h2 className="mt-6 text-lg font-extrabold text-ink">
+                {strings.topic.moderationHeading}
+              </h2>
+              {topics.filter((tp) => tp.authorId !== user?.uid).length === 0 ? (
+                <p className="mt-3 text-muted">{strings.topic.moderationEmpty}</p>
+              ) : (
+                <ul className="mt-4 space-y-4">
+                  {topics
+                    .filter((tp) => tp.authorId !== user?.uid)
+                    .map((topic) => (
+                      <li key={topic.id}>
+                        <TopicModerationItem topic={topic} onDone={refresh} />
+                      </li>
+                    ))}
+                </ul>
+              )}
+
+              {/* Ideas awaiting review */}
+              <h2 className="mt-10 text-lg font-extrabold text-ink">
+                {strings.moderation.ideasHeading}
+              </h2>
+              {ownHidden && (
+                <p className="mt-2 text-xs font-semibold text-muted">
+                  {strings.topic.selfHidden}
+                </p>
+              )}
+              {ideas.filter((i) => i.authorId !== user?.uid).length === 0 ? (
+                <p className="mt-3 text-muted">{strings.moderation.empty}</p>
+              ) : (
+                <ul className="mt-4 space-y-4">
+                  {ideas
+                    .filter((i) => i.authorId !== user?.uid)
+                    .map((idea) => (
+                      <li key={idea.id}>
+                        <ModerationItem idea={idea} onDone={refresh} />
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </>
           )}
 
           <h2 className="mt-12 text-lg font-extrabold text-ink">{strings.leaderboard.heading}</h2>

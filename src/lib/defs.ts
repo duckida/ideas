@@ -37,5 +37,8 @@ export const MAX_AUTHOR_NAME_LENGTH = 120;
  */
 export const MAX_DISPLAY_NAME_LENGTH = 120;
 
+/** Longest allowed topic (question) text (client + rules). */
+export const MAX_TOPIC_LENGTH = 200;
+
 /** Field on users/{uid} storing the timestamp of the last submitted idea. */
 export const LAST_IDEA_AT_FIELD = "lastIdeaAt";

@@ -7,14 +7,18 @@ import { useState, type FormEvent } from "react";
 import { createIdea } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
-import { trackIdeaSubmitted } from "@/lib/analytics";
+import { trackIdeaSubmitted, trackTopicResponded } from "@/lib/analytics";
+import type { Topic } from "@/lib/types";
 
 export function SubmitDialog({
   onClose,
   onSubmitted,
+  /** When set, the submission is a response to this topic (question mode). */
+  topic,
 }: {
   onClose: () => void;
   onSubmitted: () => void;
+  topic?: Topic;
 }) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
@@ -38,8 +42,10 @@ export function SubmitDialog({
         authorTitle: user.title,
         authorEmail: user.email ?? undefined,
         showAuthorName,
+        topic: topic ? { id: topic.id, question: topic.question } : undefined,
       });
       trackIdeaSubmitted(showAuthorName);
+      if (topic) trackTopicResponded();
       setStatus("submitted");
       onSubmitted();
     } catch {
@@ -74,7 +80,14 @@ export function SubmitDialog({
           </>
         ) : (
           <>
-            <h2 className="text-lg font-extrabold text-ink">{strings.fab.title}</h2>
+            <h2 className="text-lg font-extrabold text-ink">
+              {topic ? strings.topic.respond : strings.fab.title}
+            </h2>
+            {topic && (
+              <p className="mt-2 rounded-xl border border-kakao bg-kakao-soft px-3 py-2 text-sm font-bold text-ink">
+                {topic.question}
+              </p>
+            )}
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <label className="block">
                 <span className="text-sm font-semibold">{strings.fab.titleLabel}</span>

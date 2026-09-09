@@ -204,6 +204,13 @@ export function IdeaModal({ idea: initialIdea, onClose, onMutated }: IdeaModalPr
           </button>
         </div>
 
+        {/* Topic badge (question mode) */}
+        {idea.topicQuestion && (
+          <span className="mt-2 w-fit rounded-full bg-kakao-soft px-2.5 py-1 text-xs font-bold text-ink">
+            {t(strings.idea.topicBadge, { question: idea.topicQuestion })}
+          </span>
+        )}
+
         {/* Author + support */}
         <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted">
           <span>

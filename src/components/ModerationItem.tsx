@@ -68,6 +68,10 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
           ? strings.idea.statusRejected
           : strings.idea.statusPending;
 
+  // Defensive: a moderator never reviews their own idea. The moderation page
+  // filters these out already; firestore.rules block the write regardless.
+  const isOwnIdea = !!user && idea.authorId === user.uid;
+
   return (
     <div className="rounded-[1.25rem] border border-line bg-surface p-5">
       <div className="flex items-start justify-between gap-3">
@@ -107,6 +111,8 @@ export function ModerationItem({ idea, onDone }: ModerationItemProps) {
 
       {done ? (
         <p className="mt-4 text-sm font-semibold text-muted">Reviewed</p>
+      ) : isOwnIdea ? (
+        <p className="mt-4 text-sm font-semibold text-muted">{strings.topic.selfHidden}</p>
       ) : mode === "idle" ? (
         <div className="mt-4 flex flex-wrap gap-2">
           <button

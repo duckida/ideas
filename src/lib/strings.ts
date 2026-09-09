@@ -77,6 +77,8 @@ export const strings = {
     supportedBy: "Supported by {name}",
     oneSupporter: "Supported by 1 leader",
     supportedByCount: "Supported by {count} leaders",
+    /** Badge shown on ideas that respond to a topic: the {question}. */
+    topicBadge: "Topic: {question}",
     delete: "Delete",
     deleteConfirm: "Are you sure you want to delete this idea?",
     deleteConfirmDetail: "The idea will be permanently deleted",
@@ -129,8 +131,49 @@ export const strings = {
     success: "Yay! Your idea is in for review :D",
   },
 
+  topic: {
+    /** Label above the question in the topic box. */
+    heading: "Leaders' topic",
+    /** Shown when no topic is live yet (leaders/admins only see the box then). */
+    empty: "No topic right now — check back soon!",
+    /** Who set the topic: "Set by {name}". */
+    setBy: "Set by {name}",
+    respond: "Add your response",
+    newTopic: "Set a topic",
+    /** Dialog title for leaders submitting a new topic. */
+    newTitle: "Set a topic",
+    questionLabel: "Question",
+    questionPlaceholder: "e.g. What do you think of the timetable changes?",
+    questionHint: "Students will see this at the top of the Ideas page and can respond to it like an idea. It goes to other moderators for review first.",
+    submit: "Submit for moderation",
+    cancel: "Cancel",
+    submitError: "Couldn't submit your topic. Please try again.",
+    success: "Sent for review! Another moderator will approve it.",
+    /** Section heading on the moderation page. */
+    moderationHeading: "Topics awaiting review",
+    moderationEmpty: "No topics to review.",
+    approve: "Approve",
+    reject: "Reject",
+    /** Note under the moderation queues about self-moderation. */
+    selfHidden: "Your own submissions aren't shown — another moderator reviews them.",
+    /** Label above the question on a moderated topic card. */
+    submittedBy: "Submitted by {name}",
+    /** Section heading on /me listing the leader's own topics. */
+    myTopics: "My topics",
+    myTopicsEmpty: "You haven't set any topics yet.",
+    /** Status labels reuse idea.status*. */
+    delete: "Delete",
+    deleteConfirm: "Are you sure you want to delete this topic?",
+    deleteConfirmDetail: "The topic will be removed. Responses stay, but new ones can't be added.",
+    /** Section heading on the admin page. */
+    adminHeading: "Topics",
+    adminEmpty: "No topics yet.",
+  },
+
   moderation: {
     heading: "Moderation",
+    /** Section heading for the ideas queue (topics have their own above it). */
+    ideasHeading: "Ideas awaiting review",
     empty: "Nothing to review yet :D",
     /** Shown to moderators when the author hid their name: "{name} ({anonymous})". */
     anonymousFormat: "{name} ({anonymous})",

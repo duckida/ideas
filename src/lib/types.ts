@@ -45,10 +45,32 @@ export interface Idea {
   supportCount: number;
   /** When false the author's name is hidden in public views. */
   showAuthorName: boolean;
+  /** The topic (question) this idea responds to, when it was submitted from
+   * the topic box. Regular ideas leave this undefined. */
+  topicId?: string;
+  /** Denormalized copy of the topic's question text, so cards and the Me
+   * page can show which prompt a response came from even after the topic
+   * document itself is deleted by an admin. */
+  topicQuestion?: string;
   moderationFeedback: ModerationFeedback | null;
   /** uid of the moderator who last approved or sent-back this idea. */
   moderatedBy?: string;
   timeline: TimelineEntry[];
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
+}
+
+/** Mirrors the `topics` Firestore document shape — a question set by a
+ * leader (e.g. "What do you think of the timetable changes?") that students
+ * can respond to like an idea. Topics are themselves moderated before they
+ * go live. */
+export interface Topic {
+  id: string;
+  question: string;
+  status: IdeaStatus;
+  authorId: string;
+  authorName: string;
+  moderatedBy?: string;
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
 }
