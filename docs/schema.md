@@ -27,6 +27,8 @@ Created lazily on first sign-in (see `src/lib/auth.ts`).
 | authorName          | string   | denormalised for the feed                               |
 | upvoteUserIds       | string[] | uid list; toggle via `arrayUnion`/`arrayRemove`         |
 | upvoteCount         | number   | server-side `increment` kept in sync with the array     |
+| topicId             | string?  | set when the idea responds to a topic (question mode)   |
+| topicQuestion       | string?  | denormalised topic text; survives topic deletion        |
 | moderationFeedback  | object?  | `{ message, by, at }` set when requesting changes/rejecting |
 | timeline            | array    | embedded leader updates (see below)                     |
 | createdAt           | timestamp|                                                         |
@@ -55,6 +57,26 @@ The document ID encodes the pair, so supporting again is an idempotent
 `setDoc` and un-supporting is a `deleteDoc`. Used for the "Supported by
 leaders" badge and the leader's supported list.
 
+## topics / {topicId}
+
+A topic (question) set by a leader for question mode — e.g. "What do you
+think of the timetable changes?". Students respond with regular `ideas`
+docs that carry `topicId` + `topicQuestion`. Topics are moderated like
+ideas, but never by their own author; admins may delete them (responses
+keep their denormalised `topicQuestion`, so nothing is orphaned).
+
+| field        | type     | notes                                                  |
+| ------------ | -------- | ------------------------------------------------------ |
+| question     | string   | the prompt shown in the topic box (≤ 200 chars)         |
+| status       | string   | `pending` \| `approved` \| `rejected`                   |
+| authorId     | string   | uid of the leader who set it                            |
+| authorName   | string   | denormalised for the "Set by" line                      |
+| moderatedBy  | string?  | uid of the moderator who approved/rejected it           |
+| createdAt    | timestamp|                                                         |
+| updatedAt    | timestamp|                                                         |
+
+The ideas page shows the most recent `approved` topic in the topic box.
+
 ## invitedLeaders / {email}
 
 Pre-signup leader invitations. An admin can add a leader by email before
@@ -80,8 +102,11 @@ Document ID = normalised email (case-insensitive dedup).
 | Create idea (pending)      | ✔       | ✔      | ✔     |
 | Update own pending idea    | ✔       | ✔      | ✔     |
 | Delete own idea            | ✔       | ✔      | ✔     |
-| Moderate (status change)   | –       | ✔      | ✔     |
+| Moderate (status change)   | –       | ✔ (never own submission) | ✔ (never own submission) |
 | Support / un-support       | –       | ✔      | ✔     |
+| Create topic (pending)     | –       | ✔      | ✔     |
+| Delete topic               | –       | –      | ✔     |
+| Delete any idea            | –       | –      | ✔     |
 | Change user roles          | –       | –      | ✔     |
 | Manage invited leaders     | –       | –      | ✔     |
 
@@ -90,12 +115,15 @@ Document ID = normalised email (case-insensitive dedup).
 - `ideas`: `status ASC, createdAt ASC` — moderation queue
 - `ideas`: `authorId ASC, createdAt DESC` — "my ideas"
 - `supports`: `leaderId ASC, createdAt DESC` — a leader's supported ideas
+- `topics`: `status ASC, createdAt DESC` — active topic (latest approved)
+- `topics`: `status ASC, createdAt ASC` — topic moderation queue
+- `topics`: `authorId ASC, createdAt DESC` — "my topics"
 
 ## Queries used by the UI
 
 | page        | query                                            |
 | ----------- | ------------------------------------------------ |
-| `/ideas`    | `ideas` where `status == approved` order `createdAt desc`; plus one batched `supports` read per ≤30 ideas (`ideaId in […]`) for the badge |
-| `/moderation` | `ideas` where `status == pending` order `createdAt asc` |
-| `/me`       | `ideas` where `authorId == me`; `supports` where `leaderId == me` → `getIdea` each |
-| `/admin`    | `users` where `role in [leader, admin]`; `getUserByEmail` for promoting |
+| `/ideas`    | `ideas` where `status == approved` order `createdAt desc`; plus one batched `supports` read per ≤30 ideas (`ideaId in […]`) for the badge; `topics` where `status == approved` order `createdAt desc` limit 1 for the topic box |
+| `/moderation` | `ideas` where `status == pending` order `createdAt asc` (own submissions hidden); `topics` where `status == pending` order `createdAt asc` (own topics hidden) |
+| `/me`       | `ideas` where `authorId == me`; `supports` where `leaderId == me` → `getIdea` each; `topics` where `authorId == me` (leaders) |
+| `/admin`    | `users` where `role in [leader, admin]`; `getUserByEmail` for promoting; `topics` order `createdAt desc` for topic deletion |

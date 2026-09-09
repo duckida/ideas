@@ -82,10 +82,8 @@ export function TopicSubmitDialog({
                   placeholder={strings.topic.questionPlaceholder}
                   className="mt-1 w-full rounded-xl border border-line bg-background px-3 py-2 outline-none focus:border-kakao"
                 />
-                <span className="mt-1 block text-xs text-muted">
-                  {strings.topic.questionHint}
-                </span>
               </label>
+              <p className="text-xs text-muted">{strings.topic.questionHint}</p>
 
               {error && (
                 <p className="text-sm font-medium text-danger" role="alert">

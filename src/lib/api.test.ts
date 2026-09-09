@@ -43,9 +43,13 @@ vi.mock("@/lib/firebase", () => ({ getFirebaseApp: vi.fn(() => ({})) }));
 import {
   createIdea,
   deleteIdea,
+  getActiveTopic,
   getApprovedIdeas,
   getSupportsForIdeas,
   moderateIdea,
+  moderateTopic,
+  createTopic,
+  deleteTopic,
   postTimelineUpdate,
   setUpvote,
   supportIdea,
@@ -54,6 +58,7 @@ import {
 
 const db = { __type: "firestore" } as never;
 const ideaDoc = (id: string) => ({ __type: "doc", path: "ideas", ids: [id] });
+const topicDoc = (id: string) => ({ __type: "doc", path: "topics", ids: [id] });
 
 /**
  * A minimal fake Transaction bound to a users store. The real transaction in
@@ -412,5 +417,134 @@ describe("deleteIdea", () => {
     await deleteIdea("i1", db);
 
     expect(firestoreModule.deleteDoc).toHaveBeenCalledWith(ideaDoc("i1"));
+  });
+});
+
+describe("question mode (topics)", () => {
+  it("createIdea stamps topicId/topicQuestion when responding to a topic", async () => {
+    firestoreModule.getDocs.mockResolvedValue(querySnap(0));
+    const tx = txSnapshot({ uid: "u1", displayName: "Ada", lastIdeaAt: null });
+    firestoreModule.runTransaction.mockImplementationOnce(async (_db: unknown, fn: (t: unknown) => Promise<unknown>) =>
+      fn(tx),
+    );
+
+    await createIdea(
+      {
+        title: "Timetable is confusing",
+        description: "Too many room swaps",
+        authorId: "u1",
+        authorName: "Ada",
+        showAuthorName: true,
+        topic: { id: "t1", question: "What do you think of the timetable changes?" },
+      },
+      db,
+    );
+
+    const [, data] = tx.set.mock.calls[0] as [unknown, Record<string, unknown>];
+    expect(data.topicId).toBe("t1");
+    expect(data.topicQuestion).toBe("What do you think of the timetable changes?");
+  });
+
+  it("createIdea stores null topic fields for a regular idea", async () => {
+    firestoreModule.getDocs.mockResolvedValue(querySnap(0));
+    const tx = txSnapshot({ uid: "u1", displayName: "Ada", lastIdeaAt: null });
+    firestoreModule.runTransaction.mockImplementationOnce(async (_db: unknown, fn: (t: unknown) => Promise<unknown>) =>
+      fn(tx),
+    );
+
+    await createIdea(
+      { title: "T", description: "d", authorId: "u1", authorName: "Ada", showAuthorName: true },
+      db,
+    );
+
+    const [, data] = tx.set.mock.calls[0] as [unknown, Record<string, unknown>];
+    expect(data.topicId).toBeNull();
+    expect(data.topicQuestion).toBeNull();
+  });
+
+  it("createTopic writes a pending topic authored by the leader", async () => {
+    await createTopic(
+      { question: "  What do you think of the timetable changes?  ", authorId: "u9", authorName: "Ms. Kim" },
+      db,
+    );
+
+    expect(firestoreModule.setDoc).toHaveBeenCalledTimes(1);
+    const [ref, data] = firestoreModule.setDoc.mock.calls[0] as [unknown, Record<string, unknown>];
+    expect(ref).toEqual(expect.objectContaining({ __type: "doc", path: "topics" }));
+    expect(data).toMatchObject({
+      question: "What do you think of the timetable changes?", // trimmed
+      status: "pending",
+      authorId: "u9",
+      authorName: "Ms. Kim",
+      moderatedBy: null,
+    });
+  });
+
+  it("createTopic rejects an empty or over-long question", async () => {
+    await expect(
+      createTopic({ question: "   ", authorId: "u9", authorName: "Ms. Kim" }, db),
+    ).rejects.toThrow("topic_invalid_length");
+    await expect(
+      createTopic({ question: "x".repeat(201), authorId: "u9", authorName: "Ms. Kim" }, db),
+    ).rejects.toThrow("topic_invalid_length");
+    expect(firestoreModule.setDoc).not.toHaveBeenCalled();
+  });
+
+  it("moderateTopic approves and records the moderator", async () => {
+    await moderateTopic("t1", "approve", "mod2", db);
+
+    expect(firestoreModule.updateDoc).toHaveBeenCalledWith(
+      topicDoc("t1"),
+      expect.objectContaining({ status: "approved", moderatedBy: "mod2" }),
+    );
+  });
+
+  it("moderateTopic rejects", async () => {
+    await moderateTopic("t1", "reject", "mod2", db);
+
+    expect(firestoreModule.updateDoc).toHaveBeenCalledWith(
+      topicDoc("t1"),
+      expect.objectContaining({ status: "rejected", moderatedBy: "mod2" }),
+    );
+  });
+
+  it("deleteTopic deletes the topic doc", async () => {
+    await deleteTopic("t1", db);
+
+    expect(firestoreModule.deleteDoc).toHaveBeenCalledWith(topicDoc("t1"));
+  });
+
+  it("getActiveTopic returns the latest approved topic", async () => {
+    firestoreModule.getDocs.mockResolvedValueOnce({
+      docs: [
+        {
+          id: "t1",
+          data: () => ({
+            question: "What do you think of the timetable changes?",
+            status: "approved",
+            authorId: "u9",
+            authorName: "Ms. Kim",
+          }),
+        },
+      ],
+    });
+
+    const topic = await getActiveTopic(db);
+
+    expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
+    expect(firestoreModule.orderBy).toHaveBeenCalledWith("createdAt", "desc");
+    expect(firestoreModule.limit).toHaveBeenCalledWith(1);
+    expect(topic).toMatchObject({
+      id: "t1",
+      question: "What do you think of the timetable changes?",
+      status: "approved",
+      authorName: "Ms. Kim",
+    });
+  });
+
+  it("getActiveTopic returns null when no topic is live", async () => {
+    firestoreModule.getDocs.mockResolvedValueOnce({ docs: [] });
+
+    await expect(getActiveTopic(db)).resolves.toBeNull();
   });
 });

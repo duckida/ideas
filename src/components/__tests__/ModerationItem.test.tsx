@@ -118,4 +118,18 @@ describe("ModerationItem", () => {
     expect(screen.getByText("Reviewed")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();
   });
+
+  it("never lets a moderator review their own idea", async () => {
+    // The viewer is the author (u1) — even if the item is rendered, all
+    // moderation actions must be replaced by the self-review note.
+    setAuthUser({ uid: "u1", email: "a@x.com", displayName: "Ada", role: "leader" });
+    render(<ModerationItem idea={pending} onDone={vi.fn()} />);
+
+    expect(
+      screen.getByText("Your own submissions aren't shown — another moderator reviews them."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Approve" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Request changes" })).not.toBeInTheDocument();
+  });
 });

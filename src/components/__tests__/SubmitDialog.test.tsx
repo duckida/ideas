@@ -74,4 +74,35 @@ describe("SubmitDialog", () => {
       "Couldn't submit your idea. Please try again.",
     );
   });
+
+  it("attaches the topic when responding to a question", async () => {
+    const user = userEvent.setup();
+    const topic = {
+      id: "t1",
+      question: "What do you think of the timetable changes?",
+      status: "approved" as const,
+      authorId: "u9",
+      authorName: "Ms. Kim",
+      createdAt: null,
+      updatedAt: null,
+    };
+    render(<SubmitDialog topic={topic} onClose={vi.fn()} onSubmitted={vi.fn()} />);
+
+    // The dialog shows which question is being answered.
+    expect(screen.getByText("What do you think of the timetable changes?")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Add your response" })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Title"), "Too many room swaps");
+    await user.type(screen.getByLabelText("Description"), "It's confusing");
+    await user.click(screen.getByRole("button", { name: "Submit for moderation" }));
+
+    await waitFor(() =>
+      expect(api.createIdea).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Too many room swaps",
+          topic: { id: "t1", question: "What do you think of the timetable changes?" },
+        }),
+      ),
+    );
+  });
 });
