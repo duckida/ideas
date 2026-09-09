@@ -53,7 +53,7 @@ const response: Idea = {
 describe("TopicBox", () => {
   it("renders nothing at all when there are no live topics", () => {
     const { container } = render(
-      <TopicBox topics={[]} previews={new Map()} onRespond={vi.fn()} onOpenIdea={vi.fn()} />,
+      <TopicBox topics={[]} previews={new Map()} onRespond={vi.fn()} onOpenIdea={vi.fn()} onUpvote={vi.fn()} />,
     );
 
     expect(container).toBeEmptyDOMElement();
@@ -66,6 +66,7 @@ describe("TopicBox", () => {
         previews={new Map()}
         onRespond={vi.fn()}
         onOpenIdea={vi.fn()}
+        onUpvote={vi.fn()}
       />,
     );
 
@@ -75,23 +76,50 @@ describe("TopicBox", () => {
     expect(screen.getByText("Set by Mr. Park")).toBeInTheDocument();
   });
 
-  it("previews approved responses inside the card and opens them on click", async () => {
+  it("previews approved responses with a count-less upvote button, opening them on click", async () => {
     const user = userEvent.setup();
     const onOpenIdea = vi.fn();
+    const onUpvote = vi.fn();
     render(
       <TopicBox
         topics={[topic]}
         previews={new Map([[topic.id, [response]]])}
+        currentUserId="u1"
         onRespond={vi.fn()}
         onOpenIdea={onOpenIdea}
+        onUpvote={onUpvote}
       />,
     );
 
-    const preview = screen.getByRole("button", { name: /Too many room swaps/ });
-    expect(preview).toHaveTextContent("1 upvote");
+    // The preview card no longer spells out the upvote count…
+    expect(screen.queryByText("1 upvote")).not.toBeInTheDocument();
+    // …it has the small count-less upvote button instead.
+    const upvoteBtn = screen.getByRole("button", { name: "Upvote" });
+    expect(upvoteBtn).not.toHaveTextContent("1");
 
-    await user.click(preview);
+    // The upvote button toggles the vote without opening the modal…
+    await user.click(upvoteBtn);
+    expect(onUpvote).toHaveBeenCalledWith(response);
+    expect(onOpenIdea).not.toHaveBeenCalled();
+
+    // …while clicking the card body opens the response.
+    await user.click(screen.getByText("Too many room swaps"));
     expect(onOpenIdea).toHaveBeenCalledWith(response);
+  });
+
+  it("shows the upvote button as active when the current user has upvoted", () => {
+    render(
+      <TopicBox
+        topics={[topic]}
+        previews={new Map([[topic.id, [{ ...response, upvoteUserIds: ["u1"], upvoteCount: 1 }]]])}
+        currentUserId="u1"
+        onRespond={vi.fn()}
+        onOpenIdea={vi.fn()}
+        onUpvote={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Upvote" }).className).toContain("bg-kakao");
   });
 
   it("links each card's circular arrow to the topic's own page", () => {
@@ -101,6 +129,7 @@ describe("TopicBox", () => {
         previews={new Map()}
         onRespond={vi.fn()}
         onOpenIdea={vi.fn()}
+        onUpvote={vi.fn()}
       />,
     );
 
@@ -117,6 +146,7 @@ describe("TopicBox", () => {
         previews={new Map()}
         onRespond={onRespond}
         onOpenIdea={vi.fn()}
+        onUpvote={vi.fn()}
       />,
     );
 

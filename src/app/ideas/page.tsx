@@ -47,6 +47,17 @@ export default function IdeasPage() {
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
+  /** Apply/remove the current user's upvote on an idea copy. */
+  function withVote(idea: Idea, uid: string, active: boolean): Idea {
+    return {
+      ...idea,
+      upvoteUserIds: active
+        ? [...idea.upvoteUserIds, uid]
+        : idea.upvoteUserIds.filter((id) => id !== uid),
+      upvoteCount: Math.max(0, idea.upvoteCount + (active ? 1 : -1)),
+    };
+  }
+
   const toggleUpvote = useCallback(
     async (idea: Idea) => {
       if (!user) return;
@@ -54,20 +65,14 @@ export default function IdeasPage() {
       const hasUpvoted = idea.upvoteUserIds.includes(uid);
       const active = !hasUpvoted;
 
-      // Optimistic update
-      setIdeas((prev) =>
-        prev.map((i) =>
-          i.id === idea.id
-            ? {
-                ...i,
-                upvoteUserIds: active
-                  ? [...i.upvoteUserIds, uid]
-                  : i.upvoteUserIds.filter((id) => id !== uid),
-                upvoteCount: Math.max(0, i.upvoteCount + (active ? 1 : -1)),
-              }
-            : i,
-        ),
-      );
+      // Optimistic update — in both the feed and the topic preview rows.
+      const patch = (i: Idea) => (i.id === idea.id ? withVote(i, uid, active) : i);
+      setIdeas((prev) => prev.map(patch));
+      setPreviews((prev) => {
+        const next = new Map<string, Idea[]>();
+        for (const [topicId, list] of prev) next.set(topicId, list.map(patch));
+        return next;
+      });
 
       try {
         await setUpvote(idea.id, uid, active);
@@ -75,19 +80,13 @@ export default function IdeasPage() {
       } catch (err) {
         console.error("Failed to save upvote", err);
         // Revert on failure
-        setIdeas((prev) =>
-          prev.map((i) =>
-            i.id === idea.id
-              ? {
-                  ...i,
-                  upvoteUserIds: active
-                    ? i.upvoteUserIds.filter((id) => id !== uid)
-                    : [...i.upvoteUserIds, uid],
-                  upvoteCount: Math.max(0, i.upvoteCount + (active ? -1 : 1)),
-                }
-              : i,
-          ),
-        );
+        const revert = (i: Idea) => (i.id === idea.id ? withVote(i, uid, !active) : i);
+        setIdeas((prev) => prev.map(revert));
+        setPreviews((prev) => {
+          const next = new Map<string, Idea[]>();
+          for (const [topicId, list] of prev) next.set(topicId, list.map(revert));
+          return next;
+        });
       }
     },
     [user],
@@ -263,11 +262,13 @@ export default function IdeasPage() {
         <TopicBox
           topics={topics}
           previews={previews}
+          currentUserId={user?.uid}
           onRespond={(topic) => setRespondTopic(topic)}
           onOpenIdea={(idea) => {
             trackIdeaOpen("card");
             setSelectedId(idea.id);
           }}
+          onUpvote={(idea) => toggleUpvote(idea)}
         />
 
         {showSearch && (

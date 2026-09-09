@@ -10,11 +10,14 @@ interface IdeaCardProps {
   /** Leaders supporting this idea. */
   supports: SupportDoc[];
   currentUserId?: string;
+  /** Hide the "Topic: …" badge — used on a topic's own page, where every
+   * card already responds to that topic. */
+  hideTopicBadge?: boolean;
   onOpen: () => void;
   onUpvote: () => void;
 }
 
-export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: IdeaCardProps) {
+export function IdeaCard({ idea, supports, currentUserId, hideTopicBadge = false, onOpen, onUpvote }: IdeaCardProps) {
   const hasSupport = supports.length > 0;
   // Fallback when the supporter-name docs couldn't be loaded: the idea doc's
   // denormalized count still proves (and shows) that leaders backed it.
@@ -28,7 +31,7 @@ export function IdeaCard({ idea, supports, currentUserId, onOpen, onUpvote }: Id
     >
       <h3 className="text-lg font-bold leading-snug text-ink">{idea.title}</h3>
 
-      {idea.topicQuestion && (
+      {idea.topicQuestion && !hideTopicBadge && (
         <span className="w-fit rounded-full bg-kakao-soft px-2.5 py-1 text-xs font-bold text-ink">
           {t(strings.idea.topicBadge, { question: idea.topicQuestion })}
         </span>

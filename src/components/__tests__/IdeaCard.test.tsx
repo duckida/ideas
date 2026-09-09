@@ -108,4 +108,33 @@ describe("IdeaCard", () => {
     await user.click(screen.getByRole("heading", { name: /Solar benches/ }));
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
+
+  it("shows the topic badge for a topic response by default", () => {
+    render(
+      <IdeaCard
+        idea={{ ...idea, topicId: "t1", topicQuestion: "What do you think of the timetable changes?" }}
+        supports={noSupports}
+        onOpen={vi.fn()}
+        onUpvote={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText("Topic: What do you think of the timetable changes?"),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the topic badge when hideTopicBadge is set (topic's own page)", () => {
+    render(
+      <IdeaCard
+        idea={{ ...idea, topicId: "t1", topicQuestion: "What do you think of the timetable changes?" }}
+        supports={noSupports}
+        hideTopicBadge
+        onOpen={vi.fn()}
+        onUpvote={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByText("Topic: What do you think of the timetable changes?"),
+    ).not.toBeInTheDocument();
+  });
 });

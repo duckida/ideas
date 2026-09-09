@@ -9,17 +9,22 @@ import Link from "next/link";
 import { strings, t } from "@/lib/strings";
 import type { Idea, Topic } from "@/lib/types";
 
+
 interface TopicBoxProps {
   topics: Topic[];
   /** Approved responses per topic id, newest first, already capped. */
   previews: Map<string, Idea[]>;
+  /** Current user's uid, for the upvote toggle state. */
+  currentUserId?: string;
   /** Opens the respond dialog for that topic. */
   onRespond: (topic: Topic) => void;
   /** Opens the idea modal for a previewed response. */
   onOpenIdea: (idea: Idea) => void;
+  /** Toggles the current user's upvote on a previewed response. */
+  onUpvote: (idea: Idea) => void;
 }
 
-export function TopicBox({ topics, previews, onRespond, onOpenIdea }: TopicBoxProps) {
+export function TopicBox({ topics, previews, currentUserId, onRespond, onOpenIdea, onUpvote }: TopicBoxProps) {
   if (topics.length === 0) return null;
 
   return (
@@ -59,23 +64,39 @@ export function TopicBox({ topics, previews, onRespond, onOpenIdea }: TopicBoxPr
             {/* Preview row: approved responses, as many as fit */}
             {responses.length > 0 && (
               <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                {responses.map((idea) => (
-                  <button
-                    key={idea.id}
-                    type="button"
-                    onClick={() => onOpenIdea(idea)}
-                    className="w-40 shrink-0 rounded-xl border border-line bg-surface p-3 text-left transition hover:shadow-md"
-                  >
-                    <p className="line-clamp-2 text-sm font-bold leading-snug text-ink">
-                      {idea.title}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-muted">
-                      {idea.upvoteCount === 1
-                        ? strings.idea.oneUpvote
-                        : t(strings.idea.upvotes, { count: idea.upvoteCount })}
-                    </p>
-                  </button>
-                ))}
+                {responses.map((idea) => {
+                  const hasUpvoted =
+                    currentUserId !== undefined && idea.upvoteUserIds.includes(currentUserId);
+                  return (
+                    <div
+                      key={idea.id}
+                      onClick={() => onOpenIdea(idea)}
+                      className="flex w-40 shrink-0 flex-col gap-2 rounded-xl border border-line bg-surface p-3 transition hover:shadow-md"
+                    >
+                      <p className="line-clamp-2 text-sm font-bold leading-snug text-ink">
+                        {idea.title}
+                      </p>
+                      {/* Same small upvote button as the grid cards, count-less */}
+                      <button
+                        type="button"
+                        aria-label={strings.idea.upvote}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUpvote(idea);
+                        }}
+                        className={`flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold transition ${
+                          hasUpvoted
+                            ? "border-kakao bg-kakao text-ink"
+                            : "border-line text-ink hover:bg-kakao-soft"
+                        }`}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                          <path d="M6 2L10 8H2L6 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 

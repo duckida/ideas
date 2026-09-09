@@ -170,6 +170,7 @@ export default function TopicPage() {
                     idea={idea}
                     supports={supportsMap.get(idea.id) ?? []}
                     currentUserId={user?.uid}
+                    hideTopicBadge
                     onOpen={() => {
                       trackIdeaOpen("card");
                       setSelectedId(idea.id);
