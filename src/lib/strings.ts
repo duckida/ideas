@@ -132,13 +132,19 @@ export const strings = {
   },
 
   topic: {
-    /** Label above the question in the topic box. */
+    /** Label above the question on a topic card. */
     heading: "Leaders' topic",
-    /** Shown when no topic is live yet (leaders/admins only see the box then). */
-    empty: "No topic right now — check back soon!",
     /** Who set the topic: "Set by {name}". */
     setBy: "Set by {name}",
     respond: "Add your response",
+    /** Circular arrow button on a topic card → the topic's page. */
+    viewAll: "See all responses",
+    /** Topic page empty state. */
+    responsesEmpty: "No responses yet — be the first!",
+    /** Topic page heading above the response grid. */
+    responsesHeading: "Responses",
+    /** Topic page state when the topic no longer exists. */
+    notFound: "This topic isn't available anymore.",
     newTopic: "Set a topic",
     /** Dialog title for leaders submitting a new topic. */
     newTitle: "Set a topic",

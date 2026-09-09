@@ -318,19 +318,44 @@ function topicFromSnapshot(snap: {
   };
 }
 
-/** The live topic shown in the box on the ideas page — the most recently
- * approved one. */
-export async function getActiveTopic(
+/** Every live topic shown on the ideas page — all approved, newest first. */
+export async function getActiveTopics(
   firestore: Firestore = db(),
-): Promise<Topic | null> {
+): Promise<Topic[]> {
   const q = query(
     collection(firestore, "topics"),
     where("status", "==", "approved"),
     orderBy("createdAt", "desc"),
-    limit(1),
   );
   const snap = await getDocs(q);
-  return snap.docs[0] ? topicFromSnapshot(snap.docs[0]) : null;
+  return snap.docs.map(topicFromSnapshot);
+}
+
+/** Fetch a single topic by id — used by the topic page. */
+export async function getTopic(
+  topicId: string,
+  firestore: Firestore = db(),
+): Promise<Topic | null> {
+  const snap = await getDoc(doc(firestore, "topics", topicId));
+  return snap.exists() ? topicFromSnapshot(snap) : null;
+}
+
+/** The approved responses to one topic (the topic card's preview row and the
+ * topic page's full grid). */
+export async function getApprovedIdeasByTopic(
+  topicId: string,
+  maxCount?: number,
+  firestore: Firestore = db(),
+): Promise<Idea[]> {
+  const q = query(
+    collection(firestore, "ideas"),
+    where("topicId", "==", topicId),
+    where("status", "==", "approved"),
+    orderBy("createdAt", "desc"),
+    ...(maxCount ? [limit(maxCount)] : []),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(ideaFromSnapshot);
 }
 
 /** Topics awaiting review — used by /moderation. */
@@ -443,7 +468,8 @@ export async function getIdea(
   return snap.exists() ? ideaFromSnapshot(snap) : null;
 }
 
-/** The home feed — only approved ideas, sorted by newest or most upvotes. */
+/** The home feed — only approved standalone ideas (topic responses live on
+ * their topic's card + page instead), sorted by newest or most upvotes. */
 export async function getApprovedIdeas(
   sort: "new" | "upvotes" = "new",
   firestore: Firestore = db(),
@@ -451,6 +477,9 @@ export async function getApprovedIdeas(
   const q = query(
     collection(firestore, "ideas"),
     where("status", "==", "approved"),
+    // `== null` also matches docs where the field is missing (ideas created
+    // before question mode), so legacy ideas stay in the feed.
+    where("topicId", "==", null),
     orderBy(sort === "upvotes" ? "upvoteCount" : "createdAt", "desc"),
   );
   const snap = await getDocs(q);

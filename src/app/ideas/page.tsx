@@ -10,7 +10,7 @@ import { IdeaCard } from "@/components/IdeaCard";
 import { IdeaModal } from "@/components/IdeaModal";
 import { FabAdd } from "@/components/FabAdd";
 import { SubmitDialog } from "@/components/SubmitDialog";
-import { getApprovedIdeas, getSupportsForIdeas, setUpvote, getActiveTopic } from "@/lib/api";
+import { getApprovedIdeas, getSupportsForIdeas, setUpvote, getActiveTopics, getApprovedIdeasByTopic } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { strings } from "@/lib/strings";
 import { trackIdeaOpen, trackIdeaUpvote, trackIdeasSort, trackIdeasSearchOpen } from "@/lib/analytics";
@@ -18,16 +18,21 @@ import { TopicBox } from "@/components/TopicBox";
 import { TopicSubmitDialog } from "@/components/TopicSubmitDialog";
 import type { Idea, SupportDoc, Topic } from "@/lib/types";
 
+/** How many approved responses each topic card previews; the rest live on
+ * the topic's own page (arrow button). */
+const TOPIC_PREVIEW_COUNT = 4;
+
 export default function IdeasPage() {
   const { user, isLeader } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [supportsMap, setSupportsMap] = useState<Map<string, SupportDoc[]>>(new Map());
   const [supportersError, setSupportersError] = useState(false);
-  const [topic, setTopic] = useState<Topic | null>(null);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [previews, setPreviews] = useState<Map<string, Idea[]>>(new Map());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSubmit, setShowSubmit] = useState(false);
   const [showTopicSubmit, setShowTopicSubmit] = useState(false);
-  const [respondToTopic, setRespondToTopic] = useState(false);
+  const [respondTopic, setRespondTopic] = useState<Topic | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
@@ -90,11 +95,22 @@ export default function IdeasPage() {
 
   useEffect(() => {
     let active = true;
-    getActiveTopic()
-      .then((topic) => {
-        if (active) setTopic(topic);
-      })
-      .catch((err) => console.error("Failed to load active topic", err));
+    (async () => {
+      try {
+        const liveTopics = await getActiveTopics();
+        if (!active) return;
+        setTopics(liveTopics);
+        // Preview responses per topic — a small capped query each; the full
+        // lists live on each topic's page.
+        const lists = await Promise.all(
+          liveTopics.map((tp) => getApprovedIdeasByTopic(tp.id, TOPIC_PREVIEW_COUNT)),
+        );
+        if (!active) return;
+        setPreviews(new Map(liveTopics.map((tp, i) => [tp.id, lists[i]])));
+      } catch (err) {
+        console.error("Failed to load topics", err);
+      }
+    })();
     return () => {
       active = false;
     };
@@ -134,10 +150,10 @@ export default function IdeasPage() {
     };
   }, [tick, sort]);
 
-  const selected = useMemo(
-    () => ideas.find((i) => i.id === selectedId) ?? null,
-    [ideas, selectedId],
-  );
+  const selected = useMemo(() => {
+    const all = [...ideas, ...[...previews.values()].flat()];
+    return all.find((i) => i.id === selectedId) ?? null;
+  }, [ideas, previews, selectedId]);
 
   function handleSort(value: "new" | "upvotes") {
     setSort(value);
@@ -178,6 +194,15 @@ export default function IdeasPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-extrabold text-ink sm:text-2xl">{strings.ideasHome.heading}</h1>
           <div className="flex items-center gap-2">
+            {isLeader && (
+              <button
+                type="button"
+                onClick={() => setShowTopicSubmit(true)}
+                className="shrink-0 rounded-full border border-kakao bg-surface px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-kakao-soft"
+              >
+                {strings.topic.newTopic}
+              </button>
+            )}
             <button
               type="button"
               onClick={toggleSearch}
@@ -234,12 +259,15 @@ export default function IdeasPage() {
           </div>
         </div>
 
-        {/* Question mode: the topic (question) the leaders set */}
+        {/* Question mode: one card per live topic, with response previews */}
         <TopicBox
-          topic={topic}
-          canSetTopic={isLeader}
-          onRespond={() => setRespondToTopic(true)}
-          onNewTopic={() => setShowTopicSubmit(true)}
+          topics={topics}
+          previews={previews}
+          onRespond={(topic) => setRespondTopic(topic)}
+          onOpenIdea={(idea) => {
+            trackIdeaOpen("card");
+            setSelectedId(idea.id);
+          }}
         />
 
         {showSearch && (
@@ -303,10 +331,10 @@ export default function IdeasPage() {
         <IdeaModal idea={selected} onClose={() => setSelectedId(null)} onMutated={refresh} />
       )}
       {showSubmit && <SubmitDialog onClose={() => setShowSubmit(false)} onSubmitted={refresh} />}
-      {respondToTopic && topic && (
+      {respondTopic && (
         <SubmitDialog
-          topic={topic}
-          onClose={() => setRespondToTopic(false)}
+          topic={respondTopic}
+          onClose={() => setRespondTopic(null)}
           onSubmitted={refresh}
         />
       )}

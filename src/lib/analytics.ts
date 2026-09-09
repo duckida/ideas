@@ -47,6 +47,7 @@ export const ANALYTICS_EVENTS = [
   "ideas_search_open", // the search box on the ideas grid was opened
   "topic_submitted", // a leader submitted a topic for moderation
   "topic_responded", // a student responded to the live topic
+  "topic_open", // a topic's full page was opened
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
@@ -138,4 +139,9 @@ export function trackTopicSubmitted() {
 /** topic_responded — someone responded to the live topic. */
 export function trackTopicResponded() {
   saEvent("topic_responded");
+}
+
+/** topic_open — someone opened a topic's full page. */
+export function trackTopicOpen() {
+  saEvent("topic_open");
 }

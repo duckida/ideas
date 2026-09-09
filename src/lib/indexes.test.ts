@@ -31,18 +31,25 @@ interface QuerySpec {
 
 const specs: QuerySpec[] = [
   {
-    name: "getApprovedIdeas('new') — ideas feed sorted by newest",
+    name: "getApprovedIdeas('new') — ideas feed (standalone only) sorted by newest",
     collectionGroup: "ideas",
     queryScope: "COLLECTION",
-    eqFields: ["status"],
+    eqFields: ["status", "topicId"],
     orderBy: [["createdAt", "DESCENDING"]],
   },
   {
-    name: "getApprovedIdeas('upvotes') — ideas feed sorted by most upvotes",
+    name: "getApprovedIdeas('upvotes') — ideas feed (standalone only) sorted by most upvotes",
     collectionGroup: "ideas",
     queryScope: "COLLECTION",
-    eqFields: ["status"],
+    eqFields: ["status", "topicId"],
     orderBy: [["upvoteCount", "DESCENDING"]],
+  },
+  {
+    name: "getApprovedIdeasByTopic — a topic's approved responses by recency",
+    collectionGroup: "ideas",
+    queryScope: "COLLECTION",
+    eqFields: ["topicId", "status"],
+    orderBy: [["createdAt", "DESCENDING"]],
   },
   {
     name: "getIdeasByAuthor — /me idea list",
@@ -66,7 +73,7 @@ const specs: QuerySpec[] = [
     orderBy: [["createdAt", "DESCENDING"]],
   },
   {
-    name: "getActiveTopic — latest approved topic for the ideas page box",
+    name: "getActiveTopics — all live topics for the ideas page",
     collectionGroup: "topics",
     queryScope: "COLLECTION",
     eqFields: ["status"],

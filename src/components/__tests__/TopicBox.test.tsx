@@ -2,7 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TopicBox } from "@/components/TopicBox";
-import type { Topic } from "@/lib/types";
+import type { Idea, Topic } from "@/lib/types";
+
+// next/link needs the app-router context; a plain <a> is enough here.
+vi.mock("next/link", () => ({
+  default: ({ href, ...props }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...props} />
+  ),
+}));
 
 const topic: Topic = {
   id: "t1",
@@ -14,44 +21,106 @@ const topic: Topic = {
   updatedAt: null,
 };
 
+const topic2: Topic = {
+  id: "t2",
+  question: "Favourite club idea?",
+  status: "approved",
+  authorId: "u8",
+  authorName: "Mr. Park",
+  createdAt: null,
+  updatedAt: null,
+};
+
+const response: Idea = {
+  id: "i1",
+  title: "Too many room swaps",
+  description: "It's confusing",
+  status: "approved",
+  authorId: "u1",
+  authorName: "Ada",
+  topicId: "t1",
+  topicQuestion: topic.question,
+  upvoteUserIds: ["u2"],
+  upvoteCount: 1,
+  supportCount: 0,
+  showAuthorName: true,
+  moderationFeedback: null,
+  timeline: [],
+  createdAt: null,
+  updatedAt: null,
+};
+
 describe("TopicBox", () => {
-  it("shows the live question with respond and set-topic actions for leaders", async () => {
-    const user = userEvent.setup();
-    const onRespond = vi.fn();
-    render(
-      <TopicBox topic={topic} canSetTopic onRespond={onRespond} onNewTopic={vi.fn()} />,
-    );
-
-    expect(screen.getByText("What do you think of the timetable changes?")).toBeInTheDocument();
-    expect(screen.getByText("Set by Ms. Kim")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Add your response" }));
-    expect(onRespond).toHaveBeenCalled();
-  });
-
-  it("hides the set-topic button from students", () => {
-    render(<TopicBox topic={topic} canSetTopic={false} onRespond={vi.fn()} onNewTopic={vi.fn()} />);
-
-    expect(screen.getByRole("button", { name: "Add your response" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Set a topic" })).not.toBeInTheDocument();
-  });
-
-  it("renders nothing for students when no topic is live", () => {
+  it("renders nothing at all when there are no live topics", () => {
     const { container } = render(
-      <TopicBox topic={null} canSetTopic={false} onRespond={vi.fn()} onNewTopic={vi.fn()} />,
+      <TopicBox topics={[]} previews={new Map()} onRespond={vi.fn()} onOpenIdea={vi.fn()} />,
     );
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("shows the empty state with a set-topic button for leaders when nothing is live", async () => {
+  it("shows every live topic as its own card", () => {
+    render(
+      <TopicBox
+        topics={[topic, topic2]}
+        previews={new Map()}
+        onRespond={vi.fn()}
+        onOpenIdea={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("What do you think of the timetable changes?")).toBeInTheDocument();
+    expect(screen.getByText("Favourite club idea?")).toBeInTheDocument();
+    expect(screen.getByText("Set by Ms. Kim")).toBeInTheDocument();
+    expect(screen.getByText("Set by Mr. Park")).toBeInTheDocument();
+  });
+
+  it("previews approved responses inside the card and opens them on click", async () => {
     const user = userEvent.setup();
-    const onNewTopic = vi.fn();
-    render(<TopicBox topic={null} canSetTopic onRespond={vi.fn()} onNewTopic={onNewTopic} />);
+    const onOpenIdea = vi.fn();
+    render(
+      <TopicBox
+        topics={[topic]}
+        previews={new Map([[topic.id, [response]]])}
+        onRespond={vi.fn()}
+        onOpenIdea={onOpenIdea}
+      />,
+    );
 
-    expect(screen.getByText("No topic right now — check back soon!")).toBeInTheDocument();
+    const preview = screen.getByRole("button", { name: /Too many room swaps/ });
+    expect(preview).toHaveTextContent("1 upvote");
 
-    await user.click(screen.getByRole("button", { name: "Set a topic" }));
-    expect(onNewTopic).toHaveBeenCalled();
+    await user.click(preview);
+    expect(onOpenIdea).toHaveBeenCalledWith(response);
+  });
+
+  it("links each card's circular arrow to the topic's own page", () => {
+    render(
+      <TopicBox
+        topics={[topic, topic2]}
+        previews={new Map()}
+        onRespond={vi.fn()}
+        onOpenIdea={vi.fn()}
+      />,
+    );
+
+    const link1 = screen.getAllByRole("link", { name: "See all responses" })[0];
+    expect(link1).toHaveAttribute("href", `/topics/${topic.id}`);
+  });
+
+  it("fires onRespond with the topic when the respond button is clicked", async () => {
+    const user = userEvent.setup();
+    const onRespond = vi.fn();
+    render(
+      <TopicBox
+        topics={[topic]}
+        previews={new Map()}
+        onRespond={onRespond}
+        onOpenIdea={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add your response" }));
+    expect(onRespond).toHaveBeenCalledWith(topic);
   });
 });

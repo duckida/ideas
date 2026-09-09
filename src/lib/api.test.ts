@@ -43,8 +43,9 @@ vi.mock("@/lib/firebase", () => ({ getFirebaseApp: vi.fn(() => ({})) }));
 import {
   createIdea,
   deleteIdea,
-  getActiveTopic,
+  getActiveTopics,
   getApprovedIdeas,
+  getApprovedIdeasByTopic,
   getSupportsForIdeas,
   moderateIdea,
   moderateTopic,
@@ -188,25 +189,30 @@ describe("createIdea (rate-limited)", () => {
 });
 
 describe("getApprovedIdeas (home feed sort)", () => {
-  it("orders approved ideas by createdAt desc for the 'new' sort", async () => {
+  it("orders standalone approved ideas by createdAt desc for the 'new' sort", async () => {
     firestoreModule.getDocs.mockResolvedValue({ docs: [] });
 
     await getApprovedIdeas("new", db);
 
+    // Topic responses are excluded from the main feed (== null also matches
+    // docs missing the field, i.e. pre-question-mode ideas).
     expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
+    expect(firestoreModule.where).toHaveBeenCalledWith("topicId", "==", null);
     expect(firestoreModule.orderBy).toHaveBeenCalledWith("createdAt", "desc");
-    // Requires the composite index (status ASC, createdAt DESC).
+    // Requires the composite index (status ASC, topicId ASC, createdAt DESC).
     expect(firestoreModule.getDocs).toHaveBeenCalledTimes(1);
   });
 
-  it("orders approved ideas by upvoteCount desc for the 'upvotes' sort", async () => {
+  it("orders standalone approved ideas by upvoteCount desc for the 'upvotes' sort", async () => {
     firestoreModule.getDocs.mockResolvedValue({ docs: [] });
 
     await getApprovedIdeas("upvotes", db);
 
     expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
-    // Requires the composite index (status ASC, upvoteCount DESC) — declared
-    // in firestore.indexes.json and guarded by src/lib/indexes.test.ts.
+    expect(firestoreModule.where).toHaveBeenCalledWith("topicId", "==", null);
+    // Requires the composite index (status ASC, topicId ASC, upvoteCount
+    // DESC) — declared in firestore.indexes.json and guarded by
+    // src/lib/indexes.test.ts.
     expect(firestoreModule.orderBy).toHaveBeenCalledWith("upvoteCount", "desc");
   });
 });
@@ -514,9 +520,18 @@ describe("question mode (topics)", () => {
     expect(firestoreModule.deleteDoc).toHaveBeenCalledWith(topicDoc("t1"));
   });
 
-  it("getActiveTopic returns the latest approved topic", async () => {
+  it("getActiveTopics returns every approved topic, newest first", async () => {
     firestoreModule.getDocs.mockResolvedValueOnce({
       docs: [
+        {
+          id: "t2",
+          data: () => ({
+            question: "Favourite club idea?",
+            status: "approved",
+            authorId: "u8",
+            authorName: "Mr. Park",
+          }),
+        },
         {
           id: "t1",
           data: () => ({
@@ -529,22 +544,46 @@ describe("question mode (topics)", () => {
       ],
     });
 
-    const topic = await getActiveTopic(db);
+    const topics = await getActiveTopics(db);
 
     expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
     expect(firestoreModule.orderBy).toHaveBeenCalledWith("createdAt", "desc");
-    expect(firestoreModule.limit).toHaveBeenCalledWith(1);
-    expect(topic).toMatchObject({
+    expect(topics).toHaveLength(2);
+    expect(topics[0]).toMatchObject({
+      id: "t2",
+      question: "Favourite club idea?",
+      status: "approved",
+      authorName: "Mr. Park",
+    });
+    expect(topics[1]).toMatchObject({
       id: "t1",
       question: "What do you think of the timetable changes?",
-      status: "approved",
       authorName: "Ms. Kim",
     });
   });
 
-  it("getActiveTopic returns null when no topic is live", async () => {
+  it("getActiveTopics returns an empty list when nothing is live", async () => {
     firestoreModule.getDocs.mockResolvedValueOnce({ docs: [] });
 
-    await expect(getActiveTopic(db)).resolves.toBeNull();
+    await expect(getActiveTopics(db)).resolves.toEqual([]);
+  });
+
+  it("getApprovedIdeasByTopic queries a topic's approved responses by recency", async () => {
+    firestoreModule.getDocs.mockResolvedValueOnce({ docs: [] });
+
+    await getApprovedIdeasByTopic("t1", undefined, db);
+
+    expect(firestoreModule.where).toHaveBeenCalledWith("topicId", "==", "t1");
+    expect(firestoreModule.where).toHaveBeenCalledWith("status", "==", "approved");
+    expect(firestoreModule.orderBy).toHaveBeenCalledWith("createdAt", "desc");
+    expect(firestoreModule.limit).not.toHaveBeenCalled();
+  });
+
+  it("getApprovedIdeasByTopic caps the preview query when a max is given", async () => {
+    firestoreModule.getDocs.mockResolvedValueOnce({ docs: [] });
+
+    await getApprovedIdeasByTopic("t1", 4, db);
+
+    expect(firestoreModule.limit).toHaveBeenCalledWith(4);
   });
 });
